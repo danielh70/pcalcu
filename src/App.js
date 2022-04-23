@@ -51,7 +51,6 @@ function App() {
   }, [locs.holeCount]);
 
   let calculate = () => {
-    console.log('locs..', locs);
     let locState = { ...locs };
     let locations = [10];
     let locationsToFraction = ['10'];
@@ -91,7 +90,6 @@ function App() {
 
         // add the last hole 10 inches from end
         locations.push(totalLength - 10);
-        console.log('locs', locations);
 
         locState.decimal = locations;
         locState.fraction = locationsToFraction;
@@ -124,10 +122,9 @@ function App() {
 
   let handleAddHole = () => {
     let locState = { ...locs };
+
     locState.holeCount = locState.holeCount + 1;
     setLocs(locState);
-
-    console.log('locs', locs);
   };
 
   let handleRemoveHole = () => {
@@ -135,8 +132,6 @@ function App() {
 
     locState.holeCount = locState.holeCount - 1;
     setLocs(locState);
-
-    console.log('locs', locs);
   };
 
   let handleClear = () => {
@@ -187,7 +182,7 @@ function App() {
           hole
         </Button>
 
-        <Button disabled={length < 30} color='primary' variant='outlined' onClick={calculate}>
+        <Button disabled={length < 30} color='primary' variant='contained' onClick={calculate}>
           Go
         </Button>
         <Button
@@ -206,7 +201,9 @@ function App() {
         </Button>
       </Box>
 
-      <Typography>Distance: {distance}</Typography>
+      <br />
+
+      <Typography variant='h5'>Distance: {distance}</Typography>
       <br />
 
       <Frame
