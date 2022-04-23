@@ -1,6 +1,5 @@
 .App {
   text-align: center;
-  margin-top: 20px;
 }
 
 .margin-10 {
@@ -26,4 +25,9 @@
   text-align: center;
   height: 15px;
   border-left: 1px solid red;
+}
+
+.clear-btn {
+  height: 30px;
+  width: 70px;
 }

@@ -19,11 +19,8 @@ export default function Frame(props) {
                 justifyContent: 'center',
               }}
             >
-              <i
-                style={{ position: 'absolute', margin: '0px auto' }}
-                className='fa-light fa-pipe'
-              >
-                <Typography key={i} fontSize='10px'>
+              <i style={{ position: 'absolute', margin: '0px auto' }} className='fa-light fa-pipe'>
+                <Typography key={i} fontSize='.7rem'>
                   {props.locs.fraction[i]}
                 </Typography>
               </i>
