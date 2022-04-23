@@ -8,16 +8,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import TopNav from './components/TopNav';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-
 import './App.css';
-
-/**
- * TODO:
- * handle whole number measurement without fractions
- * handle smaller frame sizes
- * update frame display
- * add button to add/remove hole counts
- */
 
 const Fraction = require('fraction.js');
 
@@ -51,7 +42,6 @@ function App() {
   }, [locs.holeCount]);
 
   let calculate = () => {
-    console.log('locs', locs);
     let locState = { ...locs };
     let locations = [10];
     let locationsToFraction = ['10'];
