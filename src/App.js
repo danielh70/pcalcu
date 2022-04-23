@@ -51,6 +51,7 @@ function App() {
   }, [locs.holeCount]);
 
   let calculate = () => {
+    console.log('locs', locs);
     let locState = { ...locs };
     let locations = [10];
     let locationsToFraction = ['10'];
@@ -108,8 +109,12 @@ function App() {
 
   let handleLengthChange = (e) => {
     let state = length.slice();
+    let locState = { ...locs };
+
+    locState.holeCount = 0;
 
     state = e.target.value;
+    setLocs(locState);
     setLength(state);
   };
 
@@ -177,7 +182,7 @@ function App() {
           onClick={handleAddHole}
           variant='outlined'
           startIcon={<AddIcon />}
-          disabled={locs.holeCount >= 10 || locs.holeCount <= 1}
+          disabled={locs.holeCount >= 10 || locs.holeCount < 1}
         >
           hole
         </Button>
@@ -189,7 +194,7 @@ function App() {
           onClick={handleRemoveHole}
           variant='outlined'
           startIcon={<RemoveIcon />}
-          disabled={locs.holeCount <= 2 || length < 30}
+          disabled={locs.holeCount < 2 || length < 30}
         >
           hole
         </Button>
