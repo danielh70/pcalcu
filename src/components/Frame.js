@@ -2,11 +2,6 @@ import React from 'react';
 import Typography from '@mui/material/Typography';
 import '../App.css';
 
-/**
- * find percentage of frame that x measurement is at and divide by total length to get
- * location of hole and display it on frame piece.
- */
-
 export default function Frame(props) {
   return (
     <div className='frame-container'>

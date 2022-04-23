@@ -4489,6 +4489,11 @@ fraction.js@^4.2.0:
   resolved "https://registry.yarnpkg.com/fraction.js/-/fraction.js-4.2.0.tgz#448e5109a313a3527f5a3ab2119ec4cf0e0e2950"
   integrity sha512-MhLuK+2gUcnZe8ZHlaaINnQLl0xRIGRfcGk2yl8xoQAfHrSsL3rYu6FCmBdkdbhc9EPlwyGHewaRsvwRMJtAlA==
 
+fraction@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/fraction/-/fraction-0.2.0.tgz#65ab2c1bb6edf89989d81d50f0525e5fa27b1e4c"
+  integrity sha1-ZassG7bt+JmJ2B1Q8FJeX6J7Hkw=
+
 fresh@0.5.2:
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/fresh/-/fresh-0.5.2.tgz#3d8cadd90d976569fa835ab1f8e4b23a105605a7"
