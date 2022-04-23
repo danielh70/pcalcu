@@ -8,23 +8,22 @@
 }
 
 .frame-container {
-  height: 30px;
+  display: flex;
+
   width: 80%;
-  margin: auto;
-  /* text-align: center; */
+
+  text-align: center;
 }
 
 .frame {
-  /* text-align: center; */
   display: flex;
   height: 5px;
   border: 1px solid black;
 }
 
 .frame-mark {
+  display: flex;
   text-align: center;
   height: 15px;
   border-left: 1px solid red;
-
-  /* position: absolute; */
 }

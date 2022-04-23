@@ -18,7 +18,7 @@ const Fraction = require('fraction.js');
 function App() {
   let [length, setLength] = React.useState('');
   let [totalLength, setTotalLength] = React.useState();
-  let [fraction, setFraction] = React.useState('');
+  let [fraction, setFraction] = React.useState('0');
   let [distance, setDistance] = React.useState('');
   let [locs, setLocs] = React.useState({
     decimal: [],
@@ -55,7 +55,13 @@ function App() {
         }
 
         // adds user entered length together into one number
-        let totalLength = Fraction(length).add(fraction).valueOf();
+        let totalLength;
+
+        if (fraction.length) {
+          totalLength = Fraction(length).add(fraction).valueOf();
+        } else {
+          totalLength = Fraction(length).valueOf();
+        }
 
         if (length < 30) return;
 
@@ -118,7 +124,7 @@ function App() {
 
       <br />
 
-      <Button className='margin-10' variant='outlined' onClick={calculate}>
+      <Button className='margin-10' variant='contained' onClick={calculate}>
         Go
       </Button>
 
