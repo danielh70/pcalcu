@@ -15,6 +15,7 @@
 }
 
 .frame {
+  margin-bottom: 60px;
   display: flex;
   height: 5px;
   border: 1px solid black;

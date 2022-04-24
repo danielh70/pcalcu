@@ -129,6 +129,7 @@ function App() {
     setLocs(locState);
   };
 
+  //  shitty way to reset state, maybe fix later
   let handleClear = () => {
     setLength('');
     setTotalLength('');
