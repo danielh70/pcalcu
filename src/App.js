@@ -47,13 +47,6 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  };
-}
-
 function App() {
   let [value, setValue] = React.useState(0);
   // converts a number to the nearest 1/16th and returns the string value
@@ -69,11 +62,15 @@ function App() {
   return (
     <div className='App'>
       <TopNav />
-      <Tabs value={value} onChange={handleChange}>
-        <Tab label='Panel' {...a11yProps(0)}></Tab>
-        <Tab label='Tape Calc' {...a11yProps(1)}></Tab>
-        <Tab label='Systems' {...a11yProps(2)}></Tab>
+
+      <Tabs value={value} onChange={handleChange} centered>
+        <Tab label='Panel'></Tab>
+        <Tab label='Tape Calc'></Tab>
+        <Tab label='Systems'></Tab>
       </Tabs>
+
+      <Divider />
+
       <TabPanel value={value} index={0}>
         <Panel />
       </TabPanel>
@@ -83,9 +80,6 @@ function App() {
       <TabPanel value={value} index={2}>
         Systems
       </TabPanel>
-
-      <Divider />
-      {/* <Button onClick={test}>Test</Button> */}
     </div>
   );
 }
