@@ -75,7 +75,7 @@ function App() {
         <Panel />
       </TabPanel>
       <TabPanel value={value} index={1}>
-        Tape Calc
+        <TapeCalc />
       </TabPanel>
       <TabPanel value={value} index={2}>
         Systems
