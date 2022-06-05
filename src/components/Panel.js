@@ -65,9 +65,8 @@ export default function Panel() {
           locationsToFraction.push(closestTapeMeasure(num).toFraction(true));
         }
 
-        // adds user entered length together into one number
         let totalLength;
-
+        // adds user entered length together into one number
         if (fraction.length) {
           totalLength = Fraction(length).add(fraction).valueOf();
         } else {

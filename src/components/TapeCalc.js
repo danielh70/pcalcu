@@ -11,9 +11,10 @@ const Fraction = require('fraction.js');
 export default function TapeCalc(props) {
   let [length1, setLength1] = React.useState('');
   let [length2, setLength2] = React.useState('');
+  let [result, setResult] = React.useState('');
   const [view, setView] = React.useState('list');
 
-  let closestTapeMeasure = (frac) => {
+  let ctm = (frac) => {
     return new Fraction(Math.round(16 * Fraction(frac).valueOf()), 16);
   };
 
@@ -35,6 +36,39 @@ export default function TapeCalc(props) {
   };
 
   let handleSubmit = () => {
+    // let ftest = Fraction(length1).add(length2).toFraction(true);
+
+    switch (view) {
+      case 'add': {
+        let num1 = ctm(Fraction(length1).add(length2)).toFraction(true);
+        return setResult(num1);
+      }
+      case 'subtract': {
+        let num2 = ctm(Fraction(length1).sub(length2)).toFraction(true);
+        return setResult(num2);
+      }
+      case 'divide': {
+        let num3 = ctm(Fraction(length1).div(length2)).toFraction(true);
+        return setResult(num3);
+      }
+      case 'multiply': {
+        let num4 = ctm(Fraction(length1).mul(length2)).toFraction(true);
+        return setResult(num4);
+      }
+      default: {
+        console.log('default....');
+        break;
+      }
+    }
+
+    // console.log('ftest', ftest.toFraction(true));
+
+    let n1 = length1.split(' ');
+    let n2 = length2.split(' ');
+    let nums1 = length1[1].split('/').map((x) => parseInt(x)) || 0;
+    let nums2 = length2[1].split('/').map((x) => parseInt(x)) || 0;
+    let n1ToDecimal = nums1[0] / nums1[1] || 0;
+    let n2ToDecimal = nums2[0] / nums2[1] || 0;
     console.log('1', length1, '2', length2);
   };
 
@@ -89,6 +123,8 @@ export default function TapeCalc(props) {
       <Button variant='contained' color='primary' onClick={handleSubmit}>
         Go
       </Button>
+      <br />
+      {result}
     </div>
   );
 }
