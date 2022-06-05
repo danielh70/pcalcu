@@ -118,13 +118,12 @@ export default function TapeCalc(props) {
         />
       </Box>
       <br />
-
-      <br />
       <Button variant='contained' color='primary' onClick={handleSubmit}>
         Go
       </Button>
       <br />
-      {result}
+      <br />
+      <Typography variant='h5'>{result}</Typography>
     </div>
   );
 }
