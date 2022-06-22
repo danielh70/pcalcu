@@ -95,16 +95,16 @@ export default function TapeCalc(props) {
           onChange={handleOperatorChange}
         >
           <ToggleButton value='divide' aria-label='divide'>
-            <i class='fa-solid fa-divide'></i>
+            <i className='fa-solid fa-divide'></i>
           </ToggleButton>
           <ToggleButton value='add' aria-label='add'>
-            <i class='fa-solid fa-plus-large'></i>
+            <i className='fa-solid fa-plus-large'></i>
           </ToggleButton>
           <ToggleButton value='subtract' aria-label='subtract'>
-            <i class='fa-solid fa-minus'></i>
+            <i className='fa-solid fa-minus'></i>
           </ToggleButton>
           <ToggleButton value='multiply' aria-label='multiply'>
-            <i class='fa-solid fa-xmark-large'></i>
+            <i className='fa-solid fa-xmark-large'></i>
           </ToggleButton>
         </ToggleButtonGroup>
         <TextField
