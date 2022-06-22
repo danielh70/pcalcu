@@ -9,6 +9,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import useTapeMeasure from './useTapeMeasure';
 import TapeCalc from './components/TapeCalc';
+import Systems from './components/Systems';
 
 import './App.css';
 
@@ -78,7 +79,7 @@ function App() {
         <TapeCalc />
       </TabPanel>
       <TabPanel value={value} index={2}>
-        Systems
+        <Systems />
       </TabPanel>
     </div>
   );
