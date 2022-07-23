@@ -18,7 +18,7 @@ export default function SimpleContainer() {
   };
 
   let calculate = () => {
-    let gap = Fraction(length).mod('3 9/16').div('2');
+    let gap = Fraction(length).mod('4 5/16').div('2');
     gap = closestTapeMeasure(gap).toFraction(true);
 
     setResult(gap);
