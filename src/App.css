@@ -8,9 +8,7 @@
 
 .frame-container {
   display: flex;
-
   width: 80%;
-
   text-align: center;
 }
 
@@ -31,4 +29,21 @@
 .clear-btn {
   height: 30px;
   width: 70px;
+}
+
+.railing-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 80%;
+  height: 60px;
+  border: 1px solid black;
+}
+
+.spindle {
+  border: 1px solid black;
+  height: 30px;
+  width: 30px;
+  margin: 0px auto;
 }
