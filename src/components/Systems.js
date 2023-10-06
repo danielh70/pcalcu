@@ -18,18 +18,15 @@ export default function SimpleContainer() {
   };
 
   let calculate = () => {
+    // calculate leftover length between spindles
     let gap = Fraction(length).mod('4 3/8');
-    console.log('gap', gap);
+    // add starting measurement and divide by 2 for gap
     let addGap = gap.add('3 19/32').div(2).valueOf();
 
+    // if measurement lands on a spindle, we subtract the length of a spindle instead
     if (addGap > 3.59) {
       addGap = gap.sub('25/32').div(2).valueOf();
-      // console.log(addGap);
     }
-
-    // let test = gap % 5.15625;
-
-    console.log('addgap', addGap);
 
     gap = closestTapeMeasure(addGap).toFraction(true);
 
