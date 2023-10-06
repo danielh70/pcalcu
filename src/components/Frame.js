@@ -25,7 +25,7 @@ export default function Frame(props) {
                 style={{ position: 'absolute', margin: '0px auto' }}
                 icon={faPipe}
               ></FontAwesomeIcon>
-              <div style={{ marginTop: '20px' }}>
+              <div style={{ marginTop: '20px', position: 'absolute' }}>
                 <Typography key={i} fontSize='.7rem'>
                   {props.locs.fraction[i]}
                 </Typography>
