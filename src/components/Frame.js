@@ -2,6 +2,8 @@ import React from 'react';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPipe } from '@fortawesome/pro-solid-svg-icons';
 import '../App.css';
 
 export default function Frame(props) {
@@ -19,11 +21,15 @@ export default function Frame(props) {
                 justifyContent: 'center',
               }}
             >
-              <i style={{ position: 'absolute', margin: '0px auto' }} className='fa-light fa-pipe'>
+              <FontAwesomeIcon
+                style={{ position: 'absolute', margin: '0px auto' }}
+                icon={faPipe}
+              ></FontAwesomeIcon>
+              <div style={{ marginTop: '20px' }}>
                 <Typography key={i} fontSize='.7rem'>
                   {props.locs.fraction[i]}
                 </Typography>
-              </i>
+              </div>
             </div>
           );
         })}
