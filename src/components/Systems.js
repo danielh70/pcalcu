@@ -18,8 +18,20 @@ export default function SimpleContainer() {
   };
 
   let calculate = () => {
-    let gap = Fraction(length).mod('4 5/16').div('2');
-    gap = closestTapeMeasure(gap).toFraction(true);
+    let gap = Fraction(length).mod('4 3/8');
+    console.log('gap', gap);
+    let addGap = gap.add('3 19/32').div(2).valueOf();
+
+    if (addGap > 3.59) {
+      addGap = gap.sub('25/32').div(2).valueOf();
+      // console.log(addGap);
+    }
+
+    // let test = gap % 5.15625;
+
+    console.log('addgap', addGap);
+
+    gap = closestTapeMeasure(addGap).toFraction(true);
 
     setResult(gap);
   };
