@@ -4,6 +4,8 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faMinus, faDivide, faXmark } from '@fortawesome/free-solid-svg-icons';
 import Box from '@mui/material/Box';
 
 const Fraction = require('fraction.js');
@@ -95,16 +97,16 @@ export default function TapeCalc(props) {
           onChange={handleOperatorChange}
         >
           <ToggleButton value='divide' aria-label='divide'>
-            <i className='fa-solid fa-divide'></i>
+            <FontAwesomeIcon icon={faDivide} />
           </ToggleButton>
           <ToggleButton value='add' aria-label='add'>
-            <i className='fa-solid fa-plus-large'></i>
+            <FontAwesomeIcon icon={faPlus} />
           </ToggleButton>
           <ToggleButton value='subtract' aria-label='subtract'>
-            <i className='fa-solid fa-minus'></i>
+            <FontAwesomeIcon icon={faMinus} />
           </ToggleButton>
           <ToggleButton value='multiply' aria-label='multiply'>
-            <i className='fa-solid fa-xmark-large'></i>
+            <FontAwesomeIcon icon={faXmark} />
           </ToggleButton>
         </ToggleButtonGroup>
         <TextField
