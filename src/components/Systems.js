@@ -24,7 +24,7 @@ export default function SimpleContainer() {
     let addGap = gap.add('3 19/32').div(2).valueOf();
 
     // if measurement lands on a spindle, we subtract the length of a spindle instead
-    if (addGap > 3.59) {
+    if (addGap > 3.2) {
       addGap = gap.sub('25/32').div(2).valueOf();
     }
 
