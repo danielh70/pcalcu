@@ -1,6 +1,5 @@
 import React from 'react';
 import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPipe } from '@fortawesome/pro-solid-svg-icons';
@@ -8,7 +7,11 @@ import '../App.css';
 
 export default function Frame(props) {
   return (
-    <Container>
+    <Container
+      maxWidth={false}
+      disableGutters
+      sx={{ width: '100%', alignSelf: 'stretch', px: { xs: 0, sm: 1 } }}
+    >
       <div className='frame'>
         {props.locs.decimal.map((el, i) => {
           return (

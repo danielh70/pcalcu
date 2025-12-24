@@ -1,17 +1,21 @@
 import * as React from 'react';
 import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 
-export default function ButtonAppBar() {
+export default function TopNav() {
   return (
-    <Box
-      style={{ marginBottom: 10, marginLeft: '0px', marginRight: '0px', width: '100%' }}
-      sx={{ flexGrow: 1 }}
+    <AppBar
+      position='sticky'
+      color='primary'
+      elevation={2}
+      sx={{ minHeight: 56, justifyContent: 'center' }}
     >
-      <AppBar position='static'>
-        <Toolbar></Toolbar>
-      </AppBar>
-    </Box>
+      <Toolbar sx={{ minHeight: 56, px: { xs: 1, sm: 3 } }}>
+        <Typography variant='h6' sx={{ fontWeight: 700, letterSpacing: 1, flexGrow: 1 }}>
+          P-Calc
+        </Typography>
+      </Toolbar>
+    </AppBar>
   );
 }

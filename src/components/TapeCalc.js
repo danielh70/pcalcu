@@ -1,131 +1,290 @@
 import React from 'react';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Tooltip from '@mui/material/Tooltip';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faDivide, faXmark } from '@fortawesome/free-solid-svg-icons';
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import Button from '@mui/material/Button';
 
-const Fraction = require('fraction.js');
+import { closestSixteenth, parseLength } from '../utils/measure';
 
-export default function TapeCalc(props) {
-  let [length1, setLength1] = React.useState('');
-  let [length2, setLength2] = React.useState('');
-  let [result, setResult] = React.useState('');
-  const [view, setView] = React.useState('list');
+export function closestTapeMeasure(value) {
+  return closestSixteenth(value);
+}
 
-  let ctm = (frac) => {
-    return new Fraction(Math.round(16 * Fraction(frac).valueOf()), 16);
+export { parseLength };
+
+export function computeTapeOperation(aFraction, bFraction, op) {
+  if (!(aFraction && typeof aFraction.valueOf === 'function'))
+    throw new Error('Invalid first operand');
+
+  const b = bFraction && typeof bFraction.valueOf === 'function' ? bFraction : undefined;
+
+  switch (op) {
+    case 'add':
+      if (!b) throw new Error('Missing second operand');
+      return aFraction.add(b);
+    case 'subtract':
+      if (!b) throw new Error('Missing second operand');
+      return aFraction.sub(b);
+    case 'multiply':
+      if (!b) throw new Error('Missing second operand');
+      return aFraction.mul(b);
+    case 'divide':
+      if (!b) throw new Error('Missing second operand');
+      if (b.valueOf() === 0) throw new Error('Division by zero');
+      return aFraction.div(b);
+    default:
+      throw new Error('Unknown op');
+  }
+}
+
+const OPS = [
+  { value: 'divide', label: 'Divide', icon: faDivide, tooltip: 'Divide (a ÷ b)' },
+  { value: 'add', label: 'Add', icon: faPlus, tooltip: 'Add (a + b)' },
+  { value: 'subtract', label: 'Subtract', icon: faMinus, tooltip: 'Subtract (a - b)' },
+  { value: 'multiply', label: 'Multiply', icon: faXmark, tooltip: 'Multiply (a × b)' },
+];
+
+export default function TapeCalc() {
+  const [length1, setLength1] = React.useState('');
+  const [length2, setLength2] = React.useState('');
+  const [result, setResult] = React.useState(null);
+  const [view, setView] = React.useState('divide'); // default to 'divide'
+  const [error1, setError1] = React.useState('');
+  const [error2, setError2] = React.useState('');
+
+  const selectOp = (next) => {
+    setView(next);
+    setResult(null);
   };
 
-  let handleLengthChange = (e) => {
-    switch (e.target.name) {
-      case 'length1': {
-        let state = length1.slice();
-        state = e.target.value;
-        return setLength1(state);
-      }
-      case 'length2': {
-        let state = length2.slice();
-        state = e.target.value;
-        return setLength2(state);
-      }
-      default:
-        return;
+  const validate = (name, value) => {
+    try {
+      parseLength(value);
+      if (name === 'length1') setError1('');
+      else setError2('');
+      return true;
+    } catch (err) {
+      if (name === 'length1') setError1(err.message);
+      else setError2(err.message);
+      return false;
     }
   };
 
-  let handleSubmit = () => {
-    // let ftest = Fraction(length1).add(length2).toFraction(true);
+  const handleLengthChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'length1') {
+      setLength1(value);
+      validate('length1', value);
+    } else if (name === 'length2') {
+      setLength2(value);
+      validate('length2', value);
+    }
+    setResult(null);
+  };
 
-    switch (view) {
-      case 'add': {
-        let num1 = ctm(Fraction(length1).add(length2)).toFraction(true);
-        return setResult(num1);
-      }
-      case 'subtract': {
-        let num2 = ctm(Fraction(length1).sub(length2)).toFraction(true);
-        return setResult(num2);
-      }
-      case 'divide': {
-        let num3 = ctm(Fraction(length1).div(length2)).toFraction(true);
-        return setResult(num3);
-      }
-      case 'multiply': {
-        let num4 = ctm(Fraction(length1).mul(length2)).toFraction(true);
-        return setResult(num4);
-      }
-      default: {
-        console.log('default....');
-        break;
-      }
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const operatorButtonSx = {
+    minWidth: { xs: 48, sm: 110 },
+    minHeight: { xs: 36, sm: 40 },
+    px: { xs: 1, sm: 1.25 },
+    // use inset border to keep seams crisp
+    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+    backgroundColor: 'background.paper',
+    boxSizing: 'border-box',
+    fontWeight: 600,
+    textTransform: 'none',
+    gap: 1,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease',
+    '&:hover': { boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)' },
+    '& svg': { fontSize: { xs: 14, sm: 18 }, color: 'inherit' },
+    // subtle rounding to match theme
+    borderRadius: 6,
+    paddingLeft: 12,
+    paddingRight: 12,
+  };
+
+  const handleSubmit = () => {
+    let a, b;
+    try {
+      a = parseLength(length1);
+    } catch (err) {
+      setError1(err.message);
+      return;
     }
 
-    // console.log('ftest', ftest.toFraction(true));
+    try {
+      b = parseLength(length2);
+    } catch (err) {
+      setError2(err.message);
+      return;
+    }
 
-    let n1 = length1.split(' ');
-    let n2 = length2.split(' ');
-    let nums1 = length1[1].split('/').map((x) => parseInt(x)) || 0;
-    let nums2 = length2[1].split('/').map((x) => parseInt(x)) || 0;
-    let n1ToDecimal = nums1[0] / nums1[1] || 0;
-    let n2ToDecimal = nums2[0] / nums2[1] || 0;
-    console.log('1', length1, '2', length2);
+    try {
+      const raw = computeTapeOperation(a, b, view);
+      const nearest = closestTapeMeasure(raw);
+      setResult({ raw, nearest });
+    } catch (err) {
+      setResult({ error: err.message });
+    }
   };
 
-  const handleOperatorChange = (event: React.MouseEvent<HTMLElement>, nextView: string) => {
-    setView(nextView);
-  };
+  const goDisabled = !length1 || !length2 || error1 || error2;
 
   return (
     <div>
-      <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: { xs: 2, sm: 3 },
+          width: '100%',
+          maxWidth: 520,
+          mx: 'auto',
+          mb: 2,
+        }}
+      >
         <TextField
-          className='margin-10'
-          id='outlined-basic'
-          label='Length'
+          id='length-1'
+          label='Length 1'
           variant='outlined'
           name='length1'
           value={length1}
           onChange={handleLengthChange}
+          helperText={error1 || 'e.g., 10, 10 1/2, 1/2'}
+          error={!!error1}
+          fullWidth
+          sx={{ width: '100%', maxWidth: 360, minWidth: 0 }}
         />
-        <ToggleButtonGroup
-          orientation='vertical'
-          value={view}
-          exclusive
-          onChange={handleOperatorChange}
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            p: 1,
+            bgcolor: 'background.paper',
+            borderRadius: 1,
+          }}
         >
-          <ToggleButton value='divide' aria-label='divide'>
-            <FontAwesomeIcon icon={faDivide} />
-          </ToggleButton>
-          <ToggleButton value='add' aria-label='add'>
-            <FontAwesomeIcon icon={faPlus} />
-          </ToggleButton>
-          <ToggleButton value='subtract' aria-label='subtract'>
-            <FontAwesomeIcon icon={faMinus} />
-          </ToggleButton>
-          <ToggleButton value='multiply' aria-label='multiply'>
-            <FontAwesomeIcon icon={faXmark} />
-          </ToggleButton>
-        </ToggleButtonGroup>
+          {isSmall ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {OPS.map((op) => (
+                <ToggleButton
+                  key={op.value}
+                  value={op.value}
+                  aria-label={op.value}
+                  size='small'
+                  sx={{ ...operatorButtonSx, width: 220 }}
+                  selected={view === op.value}
+                  onClick={() => selectOp(op.value)}
+                >
+                  <Tooltip title={op.tooltip} arrow>
+                    <span>
+                      <FontAwesomeIcon icon={op.icon} />
+                    </span>
+                  </Tooltip>
+                </ToggleButton>
+              ))}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              {OPS.map((op) => (
+                <ToggleButton
+                  key={op.value}
+                  value={op.value}
+                  aria-label={op.value}
+                  size='large'
+                  sx={operatorButtonSx}
+                  selected={view === op.value}
+                  onClick={() => selectOp(op.value)}
+                >
+                  <Tooltip title={op.tooltip} arrow>
+                    <span>
+                      <FontAwesomeIcon icon={op.icon} />
+                      <span style={{ marginLeft: 8, fontWeight: 600 }}>{op.label}</span>
+                    </span>
+                  </Tooltip>
+                </ToggleButton>
+              ))}
+            </Box>
+          )}
+        </Box>
+
         <TextField
-          className='margin-10'
-          id='outlined-basic'
-          label='Length'
+          id='length-2'
+          label='Length 2'
           variant='outlined'
           name='length2'
           value={length2}
           onChange={handleLengthChange}
+          helperText={error2 || 'e.g., 10, 10 1/2, 1/2'}
+          error={!!error2}
+          fullWidth
+          sx={{ width: '100%', maxWidth: 360, minWidth: 0 }}
         />
       </Box>
-      <br />
-      <Button variant='contained' color='primary' onClick={handleSubmit}>
-        Go
-      </Button>
-      <br />
-      <br />
-      <Typography variant='h5'>{result}</Typography>
+
+      <Box style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 16 }}>
+        <Button
+          variant='contained'
+          color='primary'
+          onClick={handleSubmit}
+          disabled={!!goDisabled}
+          sx={{ minWidth: 90 }}
+        >
+          Go
+        </Button>
+        <Button
+          variant='outlined'
+          color='secondary'
+          onClick={() => {
+            setLength1('');
+            setLength2('');
+            setResult(null);
+            setError1('');
+            setError2('');
+          }}
+          sx={{ minWidth: 90 }}
+        >
+          Reset
+        </Button>
+      </Box>
+
+      <Typography
+        variant='h5'
+        sx={{ fontWeight: 700, color: 'text.primary', letterSpacing: 0.5, mb: 2 }}
+        aria-label='result'
+      >
+        {result ? (
+          result.error ? (
+            <span>{result.error}</span>
+          ) : (
+            <span>{result.nearest.toFraction(true)}</span>
+          )
+        ) : (
+          '—'
+        )}
+      </Typography>
     </div>
   );
 }
