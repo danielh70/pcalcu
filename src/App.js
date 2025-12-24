@@ -24,6 +24,13 @@ function TabPanel({ children, value, index, ...other }) {
   );
 }
 
+/**
+ * The main application component that renders the top navigation and a set of tabs
+ * for navigating between different sections: Panel, Tape Calc, and Systems.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered App component.
+ */
 export default function App() {
   const [value, setValue] = React.useState(0);
   const handleChange = (_event, newValue) => setValue(newValue);

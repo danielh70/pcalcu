@@ -19,7 +19,7 @@ export function computeSpindleGap(lengthInput) {
   let addGap = gap.add('3 19/32').div(2).valueOf();
 
   // if measurement lands on a spindle, we subtract the length of a spindle instead
-  if (addGap > 3.2) {
+  if (addGap > 3.59) {
     addGap = gap.sub('25/32').div(2).valueOf();
   }
 
@@ -60,14 +60,14 @@ export default function Systems() {
     setError('');
   };
 
-  const isGoDisabled = (() => {
+  const isGoDisabled = React.useMemo(() => {
     try {
       const v = parseLength(length).valueOf();
       return !Number.isFinite(v) || v < 5;
     } catch {
       return true;
     }
-  })();
+  }, [length]);
 
   return (
     <Box
@@ -80,7 +80,7 @@ export default function Systems() {
       }}
     >
       <TextField
-        id='outlined-basic'
+        id='spindle-length-input'
         label='Length'
         variant='outlined'
         name='length'

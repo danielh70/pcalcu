@@ -39,7 +39,9 @@ export function computeTapeOperation(aFraction, bFraction, op) {
       if (b.valueOf() === 0) throw new Error('Division by zero');
       return aFraction.div(b);
     default:
-      throw new Error('Unknown op');
+      throw new Error(
+        `Unknown operation: ${op}. Valid operations are: add, subtract, multiply, divide`
+      );
   }
 }
 
@@ -50,6 +52,35 @@ const OPS = [
   { value: 'multiply', label: 'Multiply', icon: faXmark, tooltip: 'Multiply (a × b)' },
 ];
 
+/**
+ * TapeCalc is a React functional component that provides a tape measure calculator UI.
+ *
+ * Features:
+ * - Accepts two length inputs (supports fractional values, e.g., "10 1/2").
+ * - Allows users to select an operation (e.g., add, subtract, divide, multiply) between the two lengths.
+ * - Validates input and displays errors for invalid lengths.
+ * - Computes the result and displays the nearest tape measure value.
+ * - Responsive design for small and large screens.
+ * - Includes "Go" and "Reset" buttons to perform calculation or clear inputs.
+ *
+ * State:
+ * - length1: string - First length input.
+ * - length2: string - Second length input.
+ * - result: object|null - Calculation result or error.
+ * - view: string - Selected operation.
+ * - error1: string - Error message for length1.
+ * - error2: string - Error message for length2.
+ *
+ * Dependencies:
+ * - React
+ * - Material-UI components (Box, TextField, Button, Typography, useTheme, useMediaQuery)
+ * - FontAwesomeIcon for operation icons
+ * - Utility functions: parseLength, computeTapeOperation, closestTapeMeasure
+ * - OPS: Array of operation definitions (icon, label, value, tooltip)
+ *
+ * @component
+ * @returns {JSX.Element} The rendered tape measure calculator component.
+ */
 export default function TapeCalc() {
   const [length1, setLength1] = React.useState('');
   const [length2, setLength2] = React.useState('');
@@ -139,7 +170,7 @@ export default function TapeCalc() {
     }
   };
 
-  const goDisabled = !length1 || !length2 || error1 || error2;
+  const goDisabled = !length1 || !length2 || !!error1 || !!error2;
 
   return (
     <div>

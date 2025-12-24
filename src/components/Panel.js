@@ -19,17 +19,17 @@ export function closestTapeMeasure(value) {
 const pickAutoHoleCount = (usableLength, opts = {}) => {
   const minSpacing = Number.isFinite(opts.minSpacing) ? opts.minSpacing : 15;
   const maxSpacing = Number.isFinite(opts.maxSpacing) ? opts.maxSpacing : 20;
-  const maxHoleCount = Number.isInteger(opts.maxHoleCount) ? opts.maxHoleCount : 10;
+  const maxAllowedHoleCount = Number.isInteger(opts.maxHoleCount) ? opts.maxHoleCount : 10;
 
   const target = (minSpacing + maxSpacing) / 2;
-  const minH = Math.ceil(usableLength / maxSpacing);
-  const maxH = Math.floor(usableLength / minSpacing);
+  const minHoleCount = Math.ceil(usableLength / maxSpacing);
+  const maxHoleCount = Math.floor(usableLength / minSpacing);
 
-  const clampedMin = Math.max(1, minH);
-  const clampedMax = Math.min(maxHoleCount, maxH);
+  const clampedMin = Math.max(1, minHoleCount);
+  const clampedMax = Math.min(maxAllowedHoleCount, maxHoleCount);
 
   if (clampedMin <= clampedMax) return clampedMin;
-  return Math.min(maxHoleCount, Math.max(1, Math.round(usableLength / target)));
+  return Math.min(maxAllowedHoleCount, Math.max(1, Math.round(usableLength / target)));
 };
 
 // Pure, testable function that computes hole locations and other metadata
@@ -40,15 +40,27 @@ export function computeLocations(lengthInput, fractionInput = '', holeCountInput
   let fracDecimal = 0;
   if (fractionInput !== '' && fractionInput !== null && fractionInput !== undefined) {
     const s = String(fractionInput).trim();
-    if (s.length && !/^\d+\/\d+$/.test(s)) throw new Error('Invalid fraction');
+    if (s.length && !/^\d+\/\d+$/.test(s)) {
+      throw new Error(
+        'Invalid fraction format. Expected format: numerator/denominator (e.g., 7/8)'
+      );
+    }
     if (s.length) fracDecimal = new Fraction(s).valueOf();
   }
 
   const totalLength = lengthFrac.add(fracDecimal).valueOf();
-  if (!isFinite(totalLength) || totalLength < 30) throw new Error('Invalid length');
+  if (!isFinite(totalLength)) {
+    throw new Error(
+      `Invalid length: computed total length (${totalLength}) is not a finite number.`
+    );
+  }
 
   const usable = totalLength - 20; // 10 inches each end
-  if (usable <= 0) throw new Error('Invalid length');
+  if (usable <= 0) {
+    throw new Error(
+      `Invalid length: total length (${totalLength}) must exceed 20 inches of end clearance; usable span was ${usable}.`
+    );
+  }
 
   let holeCount = Number(holeCountInput);
   if (!Number.isInteger(holeCount) || holeCount < 1) {
@@ -79,9 +91,40 @@ export function computeLocations(lengthInput, fractionInput = '', holeCountInput
   };
 }
 
+/**
+ * Panel component for calculating and displaying hole locations based on a given length.
+ *
+ * This component allows the user to input a length, add or remove holes (up to 10), and calculates
+ * the distance between holes and their locations. It displays the calculated distance, provides error
+ * handling for invalid input, and allows resetting the form.
+ *
+ * State:
+ * - length: string - The user-input length value.
+ * - totalLength: string - The computed total length after calculation.
+ * - distance: string - The computed distance between holes.
+ * - locs: { decimal: number[], fraction: string[], holeCount: number } - Locations and hole count.
+ * - error: string - Error message for invalid input or calculation errors.
+ *
+ * Side Effects:
+ * - Recalculates hole locations when the hole count changes and the length is valid.
+ *
+ * Handlers:
+ * - handleLengthChange: Updates the length and resets locations and errors.
+ * - handleAddHole: Increments the hole count (max 10).
+ * - handleRemoveHole: Decrements the hole count (min 0).
+ * - handleClear: Resets all fields to initial state.
+ * - calculate: Computes hole locations and updates state.
+ *
+ * UI:
+ * - Input for length.
+ * - Buttons to add/remove holes, trigger calculation, and reset.
+ * - Displays calculated distance and passes data to the Frame component.
+ *
+ * @component
+ */
 export default function Panel() {
   const [length, setLength] = React.useState('');
-  const [totalLength, setTotalLength] = React.useState('');
+  const [totalLength, setTotalLength] = React.useState(0);
   const [distance, setDistance] = React.useState('');
   const [locs, setLocs] = React.useState({ decimal: [], fraction: [], holeCount: 0 });
   const [error, setError] = React.useState('');
@@ -99,15 +142,7 @@ export default function Panel() {
     }
   };
 
-  React.useEffect(() => {
-    if (locs.holeCount === 0) return;
-    if (!isValidLength(length)) return;
-    if (lastComputedHoleCountRef.current === locs.holeCount) return;
-    calculate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locs.holeCount]);
-
-  const calculate = () => {
+  const calculate = React.useCallback(() => {
     try {
       const result = computeLocations(length, '', locs.holeCount);
       lastComputedHoleCountRef.current = result.holeCount;
@@ -123,7 +158,14 @@ export default function Panel() {
     } catch (err) {
       setError(err.message);
     }
-  };
+  }, [length, locs.holeCount]);
+
+  React.useEffect(() => {
+    if (locs.holeCount === 0) return;
+    if (!isValidLength(length)) return;
+    if (lastComputedHoleCountRef.current === locs.holeCount) return;
+    calculate();
+  }, [locs.holeCount, length, calculate]);
 
   const handleLengthChange = (e) => {
     setLength(e.target.value);
