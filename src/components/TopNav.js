@@ -13,7 +13,7 @@ export default function TopNav() {
     >
       <Toolbar sx={{ minHeight: 56, px: { xs: 1, sm: 3 } }}>
         <Typography variant='h6' sx={{ fontWeight: 700, letterSpacing: 1, flexGrow: 1 }}>
-          P-Calc
+          Field Calc
         </Typography>
       </Toolbar>
     </AppBar>
