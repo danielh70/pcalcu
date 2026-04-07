@@ -12,6 +12,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -32,6 +33,7 @@ export default function PostLevel() {
   const [error, setError] = React.useState('');
 
   const fileInputRef = React.useRef(null);
+  const resultsRef = React.useRef(null);
 
   const targetHeight = targetFeet * 12 + targetInches;
 
@@ -75,11 +77,13 @@ export default function PostLevel() {
       const rows = parsed.map((p) => {
         const extra = p.value.sub(minReading);
         const cutLength = target.add(extra);
+        const isBase = extra.valueOf() === 0;
         return {
           label: p.label,
           reading: closestSixteenth(p.value).toFraction(true),
           extra: closestSixteenth(extra).toFraction(true),
           cutAt: closestSixteenth(cutLength).toFraction(true),
+          isBase,
           row: p.row,
           col: p.col,
         };
@@ -87,6 +91,9 @@ export default function PostLevel() {
 
       setResults(rows);
       setError('');
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
     } catch (err) {
       setError(err.message);
       setResults(null);
@@ -158,6 +165,14 @@ export default function PostLevel() {
     }
     return cells;
   }, [results, gridRows, gridCols]);
+
+  const cellSx = {
+    py: { xs: 0.5, sm: 1 },
+    px: { xs: 1, sm: 2 },
+    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+  };
+
+  const numCellSx = { ...cellSx, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
 
   return (
     <Box
@@ -279,75 +294,137 @@ export default function PostLevel() {
       </Stack>
 
       {results && (
-        <TableContainer sx={{ mt: 2 }}>
-          <Table size='small'>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Post</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Reading</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Extra</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Cut At</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.map((row, i) => (
-                <TableRow key={i}>
-                  <TableCell>{row.label}</TableCell>
-                  <TableCell>{row.reading}</TableCell>
-                  <TableCell>{row.extra}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.cutAt}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+        <>
+          <Divider sx={{ width: '100%', my: 2 }} />
 
-      {results && gridCells.length > 0 && (
-        <Box sx={{ mt: 3, width: '100%' }}>
-          <Typography
-            variant='subtitle2'
-            sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}
-          >
-            Site Layout
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-              gap: 1.5,
-            }}
-          >
-            {gridCells.map((cell, i) =>
-              cell ? (
-                <Paper
-                  key={i}
-                  variant='outlined'
-                  sx={{
-                    p: 1.5,
-                    textAlign: 'center',
-                    borderColor: 'primary.main',
-                    borderWidth: 2,
-                    borderRadius: 1,
-                    bgcolor: 'background.paper',
-                  }}
-                >
-                  <Typography
-                    variant='caption'
-                    sx={{ fontWeight: 700, color: 'primary.dark', display: 'block' }}
-                  >
-                    {cell.label.replace('Post ', '#')}
-                  </Typography>
-                  <Typography variant='body2' sx={{ fontWeight: 600, mt: 0.5 }}>
-                    {cell.cutAt}
-                  </Typography>
-                </Paper>
-              ) : (
-                <Box key={i} />
-              )
-            )}
+          <Box ref={resultsRef} sx={{ width: '100%', scrollMarginTop: 16 }}>
+            <TableContainer
+              component={Paper}
+              variant='outlined'
+              sx={{ borderRadius: 2, overflow: 'hidden' }}
+            >
+              <Table size='small'>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'grey.100' }}>
+                    <TableCell sx={{ ...cellSx, fontWeight: 700 }}>Post</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>Reading</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>Extra</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>Cut At</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {results.map((row, i) => (
+                    <TableRow
+                      key={i}
+                      sx={{
+                        bgcolor: row.isBase
+                          ? 'rgba(46, 125, 50, 0.08)'
+                          : i % 2 === 1
+                            ? 'grey.50'
+                            : 'transparent',
+                        '&:last-child td': { borderBottom: 0 },
+                      }}
+                    >
+                      <TableCell sx={cellSx}>{row.label}</TableCell>
+                      <TableCell sx={numCellSx}>{row.reading}</TableCell>
+                      <TableCell
+                        sx={{
+                          ...numCellSx,
+                          ...(row.isBase && {
+                            color: 'success.dark',
+                            fontWeight: 600,
+                          }),
+                        }}
+                      >
+                        {row.isBase ? 'base' : row.extra}
+                      </TableCell>
+                      <TableCell sx={{ ...numCellSx, fontWeight: 600 }}>
+                        {row.cutAt}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
-        </Box>
+
+          {gridCells.length > 0 && (
+            <Box
+              sx={{
+                mt: 3,
+                width: '100%',
+                bgcolor: 'grey.50',
+                borderRadius: 2,
+                p: { xs: 1.5, sm: 2.5 },
+              }}
+            >
+              <Typography
+                variant='subtitle2'
+                sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary', textAlign: 'center' }}
+              >
+                Site Layout
+              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${gridCols}, minmax(64px, 1fr))`,
+                  gap: { xs: 1, sm: 1.5 },
+                  justifyContent: 'center',
+                  maxWidth: gridCols <= 4 ? 360 : '100%',
+                  mx: 'auto',
+                }}
+              >
+                {gridCells.map((cell, i) =>
+                  cell ? (
+                    <Paper
+                      key={i}
+                      elevation={0}
+                      sx={{
+                        p: { xs: 1, sm: 1.5 },
+                        textAlign: 'center',
+                        border: '1px solid',
+                        borderColor: 'grey.300',
+                        borderRadius: 1.5,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                        minWidth: 64,
+                        minHeight: 52,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant='caption'
+                        sx={{
+                          fontWeight: 500,
+                          color: 'text.secondary',
+                          lineHeight: 1.2,
+                          fontSize: '0.65rem',
+                        }}
+                      >
+                        {cell.label.replace('Post ', '#')}
+                      </Typography>
+                      <Typography
+                        variant='body2'
+                        sx={{
+                          fontWeight: 700,
+                          mt: 0.25,
+                          lineHeight: 1.2,
+                          fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                        }}
+                      >
+                        {cell.cutAt}
+                      </Typography>
+                    </Paper>
+                  ) : (
+                    <Box key={i} />
+                  )
+                )}
+              </Box>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   );
