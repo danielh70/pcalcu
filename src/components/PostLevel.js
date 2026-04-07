@@ -11,6 +11,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -19,16 +20,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Fraction from 'fraction.js';
 import { parseLength, closestSixteenth } from '../utils/measure';
 
-function formatFeetInches(totalInches) {
-  const rounded = closestSixteenth(totalInches);
-  const feet = Math.floor(rounded.valueOf() / 12);
-  const remainder = rounded.sub(feet * 12);
-  const inchStr = remainder.toFraction(true);
-  if (feet === 0) return `${inchStr}"`;
-  if (remainder.valueOf() === 0) return `${feet}' 0"`;
-  return `${feet}' ${inchStr}"`;
-}
-
 export default function PostLevel() {
   const [targetFeet, setTargetFeet] = React.useState(9);
   const [targetInches, setTargetInches] = React.useState(0);
@@ -36,6 +27,7 @@ export default function PostLevel() {
     { label: 'Post 1', inches: '' },
   ]);
   const [results, setResults] = React.useState(null);
+  const [layout, setLayout] = React.useState(null);
   const [photoLoading, setPhotoLoading] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -69,9 +61,11 @@ export default function PostLevel() {
 
   const calculate = () => {
     try {
-      const parsed = measurements.map((m) => ({
+      const parsed = measurements.map((m, i) => ({
         label: m.label,
         value: parseLength(m.inches),
+        row: m.row ?? 0,
+        col: m.col ?? i,
       }));
 
       const values = parsed.map((p) => p.value.valueOf());
@@ -84,8 +78,10 @@ export default function PostLevel() {
         return {
           label: p.label,
           reading: closestSixteenth(p.value).toFraction(true),
-          extra: closestSixteenth(extra).toFraction(true) + '"',
-          cutAt: formatFeetInches(cutLength),
+          extra: closestSixteenth(extra).toFraction(true),
+          cutAt: closestSixteenth(cutLength).toFraction(true),
+          row: p.row,
+          col: p.col,
         };
       });
 
@@ -123,6 +119,11 @@ export default function PostLevel() {
       const data = await res.json();
       if (data.measurements?.length) {
         setMeasurements(data.measurements);
+        setLayout(
+          data.rows != null && data.cols != null
+            ? { rows: data.rows, cols: data.cols }
+            : null
+        );
         setResults(null);
       }
     } catch (err) {
@@ -135,12 +136,28 @@ export default function PostLevel() {
 
   const handleClear = () => {
     setMeasurements([{ label: 'Post 1', inches: '' }]);
+    setLayout(null);
     setResults(null);
     setError('');
   };
 
   const allFilled =
     measurements.length > 0 && measurements.every((m) => m.inches.trim() !== '');
+
+  // Build grid cells for the site diagram
+  const gridCols = layout ? layout.cols : results ? results.length : 0;
+  const gridRows = layout ? layout.rows : 1;
+  const gridCells = React.useMemo(() => {
+    if (!results) return [];
+    const cells = [];
+    for (let r = 0; r < gridRows; r++) {
+      for (let c = 0; c < gridCols; c++) {
+        const result = results.find((res) => res.row === r && res.col === c);
+        cells.push(result || null);
+      }
+    }
+    return cells;
+  }, [results, gridRows, gridCols]);
 
   return (
     <Box
@@ -284,6 +301,53 @@ export default function PostLevel() {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+      {results && gridCells.length > 0 && (
+        <Box sx={{ mt: 3, width: '100%' }}>
+          <Typography
+            variant='subtitle2'
+            sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}
+          >
+            Site Layout
+          </Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+              gap: 1.5,
+            }}
+          >
+            {gridCells.map((cell, i) =>
+              cell ? (
+                <Paper
+                  key={i}
+                  variant='outlined'
+                  sx={{
+                    p: 1.5,
+                    textAlign: 'center',
+                    borderColor: 'primary.main',
+                    borderWidth: 2,
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                  }}
+                >
+                  <Typography
+                    variant='caption'
+                    sx={{ fontWeight: 700, color: 'primary.dark', display: 'block' }}
+                  >
+                    {cell.label.replace('Post ', '#')}
+                  </Typography>
+                  <Typography variant='body2' sx={{ fontWeight: 600, mt: 0.5 }}>
+                    {cell.cutAt}
+                  </Typography>
+                </Paper>
+              ) : (
+                <Box key={i} />
+              )
+            )}
+          </Box>
+        </Box>
       )}
     </Box>
   );

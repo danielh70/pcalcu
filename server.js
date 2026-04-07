@@ -26,7 +26,7 @@ app.post('/api/read-photo', async (req, res) => {
             },
             {
               type: 'text',
-              text: 'This photo contains handwritten transit/level rod readings for fence or deck posts. Extract each measurement. Return ONLY a JSON array of objects with "label" (e.g. "Post 1", "Post 2") and "inches" (the reading as a string, e.g. "60 1/4"). No other text.',
+              text: 'This photo contains handwritten transit/level rod readings for fence or deck posts. Extract each measurement and determine the spatial layout of the posts as drawn. Number posts left-to-right, top-to-bottom. Return ONLY a JSON object (no other text) in this exact format: {"measurements": [{"label": "Post 1", "inches": "60 1/4", "row": 0, "col": 0}, ...], "rows": 2, "cols": 4} where row and col represent each post\'s grid position as drawn (0-indexed).',
             },
           ],
         },
@@ -34,13 +34,13 @@ app.post('/api/read-photo', async (req, res) => {
     });
 
     const text = message.content[0].text.trim();
-    // Extract JSON array even if wrapped in markdown fences
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    // Extract JSON object even if wrapped in markdown fences
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return res.status(500).json({ error: 'Could not parse measurements from response' });
     }
-    const measurements = JSON.parse(jsonMatch[0]);
-    res.json({ measurements });
+    const data = JSON.parse(jsonMatch[0]);
+    res.json(data);
   } catch (err) {
     console.error('read-photo error:', err.message);
     res.status(500).json({ error: 'Failed to process image' });
