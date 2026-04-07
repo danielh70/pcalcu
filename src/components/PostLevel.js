@@ -20,9 +20,9 @@ import Fraction from 'fraction.js';
 import { parseLength, closestSixteenth } from '../utils/measure';
 
 function formatFeetInches(totalInches) {
-  const val = new Fraction(totalInches).valueOf();
-  const feet = Math.floor(val / 12);
-  const remainder = closestSixteenth(val - feet * 12);
+  const rounded = closestSixteenth(totalInches);
+  const feet = Math.floor(rounded.valueOf() / 12);
+  const remainder = rounded.sub(feet * 12);
   const inchStr = remainder.toFraction(true);
   if (feet === 0) return `${inchStr}"`;
   if (remainder.valueOf() === 0) return `${feet}' 0"`;
@@ -84,8 +84,8 @@ export default function PostLevel() {
         return {
           label: p.label,
           reading: closestSixteenth(p.value).toFraction(true),
-          extra: closestSixteenth(extra).toFraction(true),
-          cutAt: formatFeetInches(cutLength.valueOf()),
+          extra: closestSixteenth(extra).toFraction(true) + '"',
+          cutAt: formatFeetInches(cutLength),
         };
       });
 
