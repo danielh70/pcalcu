@@ -26,7 +26,7 @@ app.post('/api/read-photo', async (req, res) => {
             },
             {
               type: 'text',
-              text: 'This photo contains handwritten transit/level rod readings for fence or deck posts. Extract each measurement and determine the spatial layout of the posts as drawn. Number posts left-to-right, top-to-bottom. Return ONLY a JSON object (no other text) in this exact format: {"measurements": [{"label": "Post 1", "inches": "60 1/4", "row": 0, "col": 0}, ...], "rows": 2, "cols": 4} where row and col represent each post\'s grid position as drawn (0-indexed).',
+              text: 'This photo contains handwritten transit/level rod readings for fence or deck posts. Extract each measurement and determine the exact spatial layout.\n\nCarefully study where each post is drawn on the page. Number posts 0-based, left-to-right, top-to-bottom. Return ONLY a JSON object (no other text) with:\n- "measurements": array of {"label": "Post 1", "inches": "60 1/4"} in index order\n- "grid": a 2D array representing the spatial layout where each cell is either a post index (0-based) or null for empty space\n\nThe grid must reflect the physical layout exactly as drawn, preserving empty spaces between posts. Example for a U-shaped layout with 8 posts:\n{"measurements": [{"label": "Post 1", "inches": "60 1/4"}, {"label": "Post 2", "inches": "59 3/4"}, ...], "grid": [[0, null, null, 1], [2, null, null, 3], [4, 5, 6, 7]]}',
             },
           ],
         },

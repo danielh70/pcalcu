@@ -17,9 +17,15 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 import Fraction from 'fraction.js';
 import { parseLength, closestSixteenth } from '../utils/measure';
+
+const BASE_COLOR = '#2e7d32';
+const POST_COLOR = '#424242';
+const LINE_COLOR = '#bdbdbd';
 
 export default function PostLevel() {
   const [targetFeet, setTargetFeet] = React.useState(9);
@@ -28,12 +34,18 @@ export default function PostLevel() {
     { label: 'Post 1', inches: '' },
   ]);
   const [results, setResults] = React.useState(null);
-  const [layout, setLayout] = React.useState(null);
+  const [grid, setGrid] = React.useState(null);
   const [photoLoading, setPhotoLoading] = React.useState(false);
   const [error, setError] = React.useState('');
 
   const fileInputRef = React.useRef(null);
   const resultsRef = React.useRef(null);
+
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const pinSize = isSmall ? 36 : 48;
+  const connW = isSmall ? 16 : 24;
+  const connH = isSmall ? 12 : 20;
 
   const targetHeight = targetFeet * 12 + targetInches;
 
@@ -63,11 +75,9 @@ export default function PostLevel() {
 
   const calculate = () => {
     try {
-      const parsed = measurements.map((m, i) => ({
+      const parsed = measurements.map((m) => ({
         label: m.label,
         value: parseLength(m.inches),
-        row: m.row ?? 0,
-        col: m.col ?? i,
       }));
 
       const values = parsed.map((p) => p.value.valueOf());
@@ -84,8 +94,6 @@ export default function PostLevel() {
           extra: closestSixteenth(extra).toFraction(true),
           cutAt: closestSixteenth(cutLength).toFraction(true),
           isBase,
-          row: p.row,
-          col: p.col,
         };
       });
 
@@ -126,11 +134,7 @@ export default function PostLevel() {
       const data = await res.json();
       if (data.measurements?.length) {
         setMeasurements(data.measurements);
-        setLayout(
-          data.rows != null && data.cols != null
-            ? { rows: data.rows, cols: data.cols }
-            : null
-        );
+        setGrid(Array.isArray(data.grid) ? data.grid : null);
         setResults(null);
       }
     } catch (err) {
@@ -143,7 +147,7 @@ export default function PostLevel() {
 
   const handleClear = () => {
     setMeasurements([{ label: 'Post 1', inches: '' }]);
-    setLayout(null);
+    setGrid(null);
     setResults(null);
     setError('');
   };
@@ -151,20 +155,63 @@ export default function PostLevel() {
   const allFilled =
     measurements.length > 0 && measurements.every((m) => m.inches.trim() !== '');
 
-  // Build grid cells for the site diagram
-  const gridCols = layout ? layout.cols : results ? results.length : 0;
-  const gridRows = layout ? layout.rows : 1;
-  const gridCells = React.useMemo(() => {
-    if (!results) return [];
+  // Source grid: from API or single-row fallback for manual entry
+  const sourceGrid = React.useMemo(() => {
+    if (!results) return null;
+    if (grid) return grid;
+    return [results.map((_, i) => i)];
+  }, [results, grid]);
+
+  // Build interleaved grid cells for the diagram
+  const diagramData = React.useMemo(() => {
+    if (!sourceGrid || !results) return null;
+
+    const numRows = sourceGrid.length;
+    const numCols = Math.max(...sourceGrid.map((r) => r.length));
+    const norm = sourceGrid.map((row) => {
+      const padded = [...row];
+      while (padded.length < numCols) padded.push(null);
+      return padded;
+    });
+
+    const hasPost = (r, c) =>
+      r >= 0 && r < numRows && c >= 0 && c < numCols && norm[r][c] != null;
+
+    const iRows = 2 * numRows - 1;
+    const iCols = 2 * numCols - 1;
     const cells = [];
-    for (let r = 0; r < gridRows; r++) {
-      for (let c = 0; c < gridCols; c++) {
-        const result = results.find((res) => res.row === r && res.col === c);
-        cells.push(result || null);
+
+    for (let ir = 0; ir < iRows; ir++) {
+      for (let ic = 0; ic < iCols; ic++) {
+        const postRow = ir % 2 === 0;
+        const postCol = ic % 2 === 0;
+
+        if (postRow && postCol) {
+          const idx = norm[ir / 2][ic / 2];
+          cells.push({
+            type: 'post',
+            idx,
+            result: idx != null ? results[idx] : null,
+          });
+        } else if (postRow && !postCol) {
+          cells.push({
+            type: 'hline',
+            show: hasPost(ir / 2, (ic - 1) / 2) && hasPost(ir / 2, (ic + 1) / 2),
+          });
+        } else if (!postRow && postCol) {
+          cells.push({
+            type: 'vline',
+            show:
+              hasPost((ir - 1) / 2, ic / 2) && hasPost((ir + 1) / 2, ic / 2),
+          });
+        } else {
+          cells.push({ type: 'empty' });
+        }
       }
     }
-    return cells;
-  }, [results, gridRows, gridCols]);
+
+    return { cells, iCols, iRows };
+  }, [sourceGrid, results]);
 
   const cellSx = {
     py: { xs: 0.5, sm: 1 },
@@ -172,7 +219,11 @@ export default function PostLevel() {
     fontSize: { xs: '0.75rem', sm: '0.875rem' },
   };
 
-  const numCellSx = { ...cellSx, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
+  const numCellSx = {
+    ...cellSx,
+    textAlign: 'right',
+    fontVariantNumeric: 'tabular-nums',
+  };
 
   return (
     <Box
@@ -307,9 +358,15 @@ export default function PostLevel() {
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'grey.100' }}>
                     <TableCell sx={{ ...cellSx, fontWeight: 700 }}>Post</TableCell>
-                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>Reading</TableCell>
-                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>Extra</TableCell>
-                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>Cut At</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>
+                      Reading
+                    </TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>
+                      Extra
+                    </TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>
+                      Cut At
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -348,7 +405,7 @@ export default function PostLevel() {
             </TableContainer>
           </Box>
 
-          {gridCells.length > 0 && (
+          {diagramData && (
             <Box
               sx={{
                 mt: 3,
@@ -356,71 +413,141 @@ export default function PostLevel() {
                 bgcolor: 'grey.50',
                 borderRadius: 2,
                 p: { xs: 1.5, sm: 2.5 },
+                backgroundImage:
+                  'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                backgroundSize: '12px 12px',
               }}
             >
               <Typography
                 variant='subtitle2'
-                sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary', textAlign: 'center' }}
+                sx={{
+                  mb: 2,
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                  textAlign: 'center',
+                }}
               >
                 Site Layout
               </Typography>
               <Box
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${gridCols}, minmax(64px, 1fr))`,
-                  gap: { xs: 1, sm: 1.5 },
+                  overflowX: 'auto',
+                  display: 'flex',
                   justifyContent: 'center',
-                  maxWidth: gridCols <= 4 ? 360 : '100%',
-                  mx: 'auto',
+                  pb: 1,
                 }}
               >
-                {gridCells.map((cell, i) =>
-                  cell ? (
-                    <Paper
-                      key={i}
-                      elevation={0}
-                      sx={{
-                        p: { xs: 1, sm: 1.5 },
-                        textAlign: 'center',
-                        border: '1px solid',
-                        borderColor: 'grey.300',
-                        borderRadius: 1.5,
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                        minWidth: 64,
-                        minHeight: 52,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Typography
-                        variant='caption'
-                        sx={{
-                          fontWeight: 500,
-                          color: 'text.secondary',
-                          lineHeight: 1.2,
-                          fontSize: '0.65rem',
-                        }}
-                      >
-                        {cell.label.replace('Post ', '#')}
-                      </Typography>
-                      <Typography
-                        variant='body2'
-                        sx={{
-                          fontWeight: 700,
-                          mt: 0.25,
-                          lineHeight: 1.2,
-                          fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                        }}
-                      >
-                        {cell.cutAt}
-                      </Typography>
-                    </Paper>
-                  ) : (
-                    <Box key={i} />
-                  )
-                )}
+                <Box
+                  sx={{
+                    display: 'inline-grid',
+                    gridTemplateColumns: Array.from(
+                      { length: diagramData.iCols },
+                      (_, i) => (i % 2 === 0 ? `${pinSize}px` : `${connW}px`)
+                    ).join(' '),
+                    gridTemplateRows: Array.from(
+                      { length: diagramData.iRows },
+                      (_, i) => (i % 2 === 0 ? 'auto' : `${connH}px`)
+                    ).join(' '),
+                    alignItems: 'stretch',
+                  }}
+                >
+                  {diagramData.cells.map((cell, i) => {
+                    if (cell.type === 'post' && cell.result) {
+                      const isBase = cell.result.isBase;
+                      const accent = isBase ? BASE_COLOR : POST_COLOR;
+                      return (
+                        <Box
+                          key={i}
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            pb: 0.5,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: pinSize,
+                              height: pinSize,
+                              borderRadius: '50%',
+                              border: '2.5px solid',
+                              borderColor: accent,
+                              bgcolor: isBase ? 'rgba(46,125,50,0.1)' : '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: pinSize > 40 ? '0.85rem' : '0.7rem',
+                                color: accent,
+                                lineHeight: 1,
+                              }}
+                            >
+                              {cell.idx + 1}
+                            </Typography>
+                          </Box>
+                          <Typography
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: pinSize > 40 ? '0.65rem' : '0.55rem',
+                              color: 'text.primary',
+                              mt: 0.25,
+                              lineHeight: 1.2,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {cell.result.cutAt}
+                          </Typography>
+                        </Box>
+                      );
+                    }
+
+                    if (cell.type === 'hline' && cell.show) {
+                      return (
+                        <Box key={i} sx={{ position: 'relative' }}>
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: pinSize / 2 - 1,
+                              left: 0,
+                              right: 0,
+                              height: 2,
+                              bgcolor: LINE_COLOR,
+                            }}
+                          />
+                        </Box>
+                      );
+                    }
+
+                    if (cell.type === 'vline' && cell.show) {
+                      return (
+                        <Box
+                          key={i}
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            height: '100%',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 2,
+                              height: '100%',
+                              bgcolor: LINE_COLOR,
+                            }}
+                          />
+                        </Box>
+                      );
+                    }
+
+                    // Empty post slot, empty connector, or intersection
+                    return <Box key={i} />;
+                  })}
+                </Box>
               </Box>
             </Box>
           )}
