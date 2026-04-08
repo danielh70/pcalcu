@@ -4,7 +4,7 @@ import Divider from '@mui/material/Divider';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import PostLevel from './components/PostLevel';
+// import PostLevel from './components/PostLevel';
 import TapeCalc from './components/TapeCalc';
 import Systems from './components/Systems';
 
@@ -40,22 +40,22 @@ export default function App() {
           sx={{ mb: 1 }}
           aria-label='Main navigation tabs'
         >
-          <Tab label='Post Level' id='tab-0' aria-controls='tabpanel-0' />
-          <Tab label='Tape Calc' id='tab-1' aria-controls='tabpanel-1' />
-          <Tab label='Systems' id='tab-2' aria-controls='tabpanel-2' />
+          {/* <Tab label='Post Level' id='tab-0' aria-controls='tabpanel-0' /> */}
+          <Tab label='Tape Calc' id='tab-0' aria-controls='tabpanel-0' />
+          <Tab label='Systems' id='tab-1' aria-controls='tabpanel-1' />
         </Tabs>
         <Divider sx={{ mb: 2 }} />
-        <TabPanel value={value} index={0}>
+        {/* <TabPanel value={value} index={0}>
           <div className='tab-content-card'>
             <PostLevel />
           </div>
-        </TabPanel>
-        <TabPanel value={value} index={1}>
+        </TabPanel> */}
+        <TabPanel value={value} index={0}>
           <div className='tab-content-card'>
             <TapeCalc />
           </div>
         </TabPanel>
-        <TabPanel value={value} index={2}>
+        <TabPanel value={value} index={1}>
           <div className='tab-content-card'>
             <Systems />
           </div>
