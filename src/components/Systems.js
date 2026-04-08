@@ -86,7 +86,7 @@ export default function Systems() {
         name='length'
         value={length}
         onChange={handleLengthChange}
-        helperText={error || 'e.g., 8 3/4'}
+        helperText={error}
         error={!!error}
         fullWidth
         sx={{ maxWidth: 360, minWidth: 0, flex: 1, mb: 2 }}

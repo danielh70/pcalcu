@@ -1,13 +1,9 @@
 import React from 'react';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
-import Tooltip from '@mui/material/Tooltip';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faDivide, faXmark } from '@fortawesome/free-solid-svg-icons';
 import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import Button from '@mui/material/Button';
 
 import { closestSixteenth, parseLength } from '../utils/measure';
@@ -46,121 +42,110 @@ export function computeTapeOperation(aFraction, bFraction, op) {
 }
 
 const OPS = [
-  { value: 'divide', label: 'Divide', icon: faDivide, tooltip: 'Divide (a ÷ b)' },
-  { value: 'add', label: 'Add', icon: faPlus, tooltip: 'Add (a + b)' },
-  { value: 'subtract', label: 'Subtract', icon: faMinus, tooltip: 'Subtract (a - b)' },
-  { value: 'multiply', label: 'Multiply', icon: faXmark, tooltip: 'Multiply (a × b)' },
+  { value: 'divide', icon: faDivide },
+  { value: 'add', icon: faPlus },
+  { value: 'subtract', icon: faMinus },
+  { value: 'multiply', icon: faXmark },
 ];
 
-/**
- * TapeCalc is a React functional component that provides a tape measure calculator UI.
- *
- * Features:
- * - Accepts two length inputs (supports fractional values, e.g., "10 1/2").
- * - Allows users to select an operation (e.g., add, subtract, divide, multiply) between the two lengths.
- * - Validates input and displays errors for invalid lengths.
- * - Computes the result and displays the nearest tape measure value.
- * - Responsive design for small and large screens.
- * - Includes "Go" and "Reset" buttons to perform calculation or clear inputs.
- *
- * State:
- * - length1: string - First length input.
- * - length2: string - Second length input.
- * - result: object|null - Calculation result or error.
- * - view: string - Selected operation.
- * - error1: string - Error message for length1.
- * - error2: string - Error message for length2.
- *
- * Dependencies:
- * - React
- * - Material-UI components (Box, TextField, Button, Typography, useTheme, useMediaQuery)
- * - FontAwesomeIcon for operation icons
- * - Utility functions: parseLength, computeTapeOperation, closestTapeMeasure
- * - OPS: Array of operation definitions (icon, label, value, tooltip)
- *
- * @component
- * @returns {JSX.Element} The rendered tape measure calculator component.
- */
+const FRACTIONS = [
+  '1/16', '1/8', '3/16', '1/4', '5/16', '3/8', '7/16',
+  '1/2', '9/16', '5/8', '11/16', '3/4', '13/16', '7/8', '15/16',
+];
+
+const KEYS = [
+  '7', '8', '9', 'clear',
+  '4', '5', '6', 'backspace',
+  '1', '2', '3', '0',
+];
+
+const keyBtnBase = {
+  minHeight: 48,
+  minWidth: 0,
+  borderRadius: 2,
+  border: 'none',
+  boxShadow: 'none',
+  textTransform: 'none',
+  fontWeight: 600,
+  '&:hover': { boxShadow: 'none' },
+};
+
+const numBtnSx = {
+  ...keyBtnBase,
+  bgcolor: '#f0f0f0',
+  color: 'text.primary',
+  fontSize: '1.25rem',
+  '&:hover': { bgcolor: '#e4e4e4', boxShadow: 'none' },
+  '&:active': { bgcolor: '#d8d8d8' },
+};
+
+const actionBtnSx = {
+  ...keyBtnBase,
+  bgcolor: '#e0e0e0',
+  color: 'text.secondary',
+  fontSize: '1.1rem',
+  '&:hover': { bgcolor: '#d4d4d4', boxShadow: 'none' },
+  '&:active': { bgcolor: '#c8c8c8' },
+};
+
 export default function TapeCalc() {
   const [length1, setLength1] = React.useState('');
   const [length2, setLength2] = React.useState('');
+  const [activeField, setActiveField] = React.useState('length1');
   const [result, setResult] = React.useState(null);
-  const [view, setView] = React.useState('divide'); // default to 'divide'
-  const [error1, setError1] = React.useState('');
-  const [error2, setError2] = React.useState('');
+  const [view, setView] = React.useState('divide');
+
+  const setActive = activeField === 'length1' ? setLength1 : setLength2;
+
+  const handleDigit = (digit) => {
+    setResult(null);
+    setActive((prev) => prev + digit);
+  };
+
+  const handleBackspace = () => {
+    setResult(null);
+    setActive((prev) => {
+      if (!prev) return prev;
+      const m = prev.match(/\s+\d+\/\d+$/);
+      if (m) return prev.slice(0, -m[0].length);
+      if (/^\d+\/\d+$/.test(prev)) return '';
+      return prev.slice(0, -1);
+    });
+  };
+
+  const handleClearEntry = () => {
+    setResult(null);
+    setActive('');
+  };
+
+  const handleFraction = (frac) => {
+    setResult(null);
+    setActive((prev) => {
+      const t = prev.trim();
+      if (!t) return frac;
+      if (/^\d+\/\d+$/.test(t)) return frac;
+      return t.replace(/\s+\d+\/\d+$/, '') + ' ' + frac;
+    });
+  };
 
   const selectOp = (next) => {
     setView(next);
+    setActiveField('length2');
     setResult(null);
-  };
-
-  const validate = (name, value) => {
-    try {
-      parseLength(value);
-      if (name === 'length1') setError1('');
-      else setError2('');
-      return true;
-    } catch (err) {
-      if (name === 'length1') setError1(err.message);
-      else setError2(err.message);
-      return false;
-    }
-  };
-
-  const handleLengthChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'length1') {
-      setLength1(value);
-      validate('length1', value);
-    } else if (name === 'length2') {
-      setLength2(value);
-      validate('length2', value);
-    }
-    setResult(null);
-  };
-
-  const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const operatorButtonSx = {
-    minWidth: { xs: 48, sm: 110 },
-    minHeight: { xs: 36, sm: 40 },
-    px: { xs: 1, sm: 1.25 },
-    // use inset border to keep seams crisp
-    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
-    backgroundColor: 'background.paper',
-    boxSizing: 'border-box',
-    fontWeight: 600,
-    textTransform: 'none',
-    gap: 1,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease',
-    '&:hover': { boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)' },
-    '& svg': { fontSize: { xs: 14, sm: 18 }, color: 'inherit' },
-    // subtle rounding to match theme
-    borderRadius: 6,
-    paddingLeft: 12,
-    paddingRight: 12,
   };
 
   const handleSubmit = () => {
     let a, b;
     try {
       a = parseLength(length1);
-    } catch (err) {
-      setError1(err.message);
+    } catch {
       return;
     }
-
     try {
       b = parseLength(length2);
-    } catch (err) {
-      setError2(err.message);
+    } catch {
       return;
     }
-
     try {
       const raw = computeTapeOperation(a, b, view);
       const nearest = closestTapeMeasure(raw);
@@ -170,152 +155,225 @@ export default function TapeCalc() {
     }
   };
 
-  const goDisabled = !length1 || !length2 || !!error1 || !!error2;
+  const handleReset = () => {
+    setLength1('');
+    setLength2('');
+    setResult(null);
+    setActiveField('length1');
+    setView('divide');
+  };
+
+  const goDisabled = !length1 || !length2;
+
+  const renderDisplay = (label, value, field) => {
+    const isActive = activeField === field;
+    return (
+      <Box
+        onClick={() => setActiveField(field)}
+        aria-label={label}
+        role='button'
+        tabIndex={0}
+        sx={{
+          width: '100%',
+          minHeight: 52,
+          px: 2,
+          py: 1,
+          borderRadius: 2,
+          border: '2.5px solid',
+          borderColor: isActive ? 'primary.main' : 'grey.300',
+          bgcolor: isActive ? 'rgba(25, 118, 210, 0.04)' : '#fafafa',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          transition: 'border-color 0.15s, background-color 0.15s',
+          userSelect: 'none',
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            color: isActive ? 'primary.main' : 'text.secondary',
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+          }}
+        >
+          {label}
+        </Typography>
+        <Typography
+          data-testid={`${field}-value`}
+          sx={{
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            color: value ? 'text.primary' : 'grey.300',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {value || '0'}
+        </Typography>
+      </Box>
+    );
+  };
 
   return (
-    <div>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1.5,
+        width: '100%',
+        maxWidth: 400,
+        mx: 'auto',
+      }}
+    >
+      {renderDisplay('Length 1', length1, 'length1')}
+
+      <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+        {OPS.map((op) => (
+          <ToggleButton
+            key={op.value}
+            value={op.value}
+            aria-label={op.value}
+            selected={view === op.value}
+            onClick={() => selectOp(op.value)}
+            size='small'
+            sx={{ flex: 1, minHeight: 44, borderRadius: 1.5 }}
+          >
+            <FontAwesomeIcon icon={op.icon} />
+          </ToggleButton>
+        ))}
+      </Box>
+
+      {renderDisplay('Length 2', length2, 'length2')}
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 0.75,
+          width: '100%',
+        }}
+      >
+        {KEYS.map((key) => {
+          if (key === 'clear') {
+            return (
+              <Button
+                key={key}
+                onClick={handleClearEntry}
+                aria-label='clear entry'
+                sx={actionBtnSx}
+              >
+                C
+              </Button>
+            );
+          }
+          if (key === 'backspace') {
+            return (
+              <Button
+                key={key}
+                onClick={handleBackspace}
+                aria-label='backspace'
+                sx={actionBtnSx}
+              >
+                &#x232B;
+              </Button>
+            );
+          }
+          return (
+            <Button key={key} onClick={() => handleDigit(key)} sx={numBtnSx}>
+              {key}
+            </Button>
+          );
+        })}
+      </Box>
+
       <Box
         sx={{
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: { xs: 2, sm: 3 },
+          gap: 0.5,
           width: '100%',
-          maxWidth: 520,
-          mx: 'auto',
-          mb: 2,
+          overflowX: 'auto',
+          pb: 0.5,
+          '&::-webkit-scrollbar': { display: 'none' },
+          scrollbarWidth: 'none',
         }}
       >
-        <TextField
-          id='length-1'
-          label='Length 1'
-          variant='outlined'
-          name='length1'
-          value={length1}
-          onChange={handleLengthChange}
-          helperText={error1 || 'e.g., 10, 10 1/2, 1/2'}
-          error={!!error1}
-          fullWidth
-          sx={{ width: '100%', maxWidth: 360, minWidth: 0 }}
-        />
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            p: 1,
-            bgcolor: 'background.paper',
-            borderRadius: 1,
-          }}
-        >
-          {isSmall ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {OPS.map((op) => (
-                <ToggleButton
-                  key={op.value}
-                  value={op.value}
-                  aria-label={op.value}
-                  size='small'
-                  sx={{ ...operatorButtonSx, width: 220 }}
-                  selected={view === op.value}
-                  onClick={() => selectOp(op.value)}
-                >
-                  <Tooltip title={op.tooltip} arrow>
-                    <span>
-                      <FontAwesomeIcon icon={op.icon} />
-                    </span>
-                  </Tooltip>
-                </ToggleButton>
-              ))}
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              {OPS.map((op) => (
-                <ToggleButton
-                  key={op.value}
-                  value={op.value}
-                  aria-label={op.value}
-                  size='large'
-                  sx={operatorButtonSx}
-                  selected={view === op.value}
-                  onClick={() => selectOp(op.value)}
-                >
-                  <Tooltip title={op.tooltip} arrow>
-                    <span>
-                      <FontAwesomeIcon icon={op.icon} />
-                      <span style={{ marginLeft: 8, fontWeight: 600 }}>{op.label}</span>
-                    </span>
-                  </Tooltip>
-                </ToggleButton>
-              ))}
-            </Box>
-          )}
-        </Box>
-
-        <TextField
-          id='length-2'
-          label='Length 2'
-          variant='outlined'
-          name='length2'
-          value={length2}
-          onChange={handleLengthChange}
-          helperText={error2 || 'e.g., 10, 10 1/2, 1/2'}
-          error={!!error2}
-          fullWidth
-          sx={{ width: '100%', maxWidth: 360, minWidth: 0 }}
-        />
+        {FRACTIONS.map((frac) => (
+          <Button
+            key={frac}
+            onClick={() => handleFraction(frac)}
+            sx={{
+              minWidth: 'auto',
+              minHeight: 36,
+              px: 1,
+              py: 0.25,
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: 'text.secondary',
+              bgcolor: '#f5f5f5',
+              borderRadius: 1.5,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              textTransform: 'none',
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#e8e8e8', boxShadow: 'none' },
+            }}
+          >
+            {frac}
+          </Button>
+        ))}
       </Box>
 
-      <Box style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 16 }}>
+      <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
         <Button
           variant='contained'
-          color='primary'
           onClick={handleSubmit}
-          disabled={!!goDisabled}
-          sx={{ minWidth: 90 }}
+          disabled={goDisabled}
+          aria-label='calculate'
+          sx={{ flex: 3, minHeight: 48, fontSize: '1.5rem', fontWeight: 700 }}
         >
-          Go
+          =
         </Button>
         <Button
           variant='outlined'
-          color='secondary'
-          onClick={() => {
-            setLength1('');
-            setLength2('');
-            setResult(null);
-            setError1('');
-            setError2('');
+          onClick={handleReset}
+          aria-label='reset'
+          sx={{
+            flex: 1,
+            minHeight: 48,
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            color: 'text.secondary',
+            borderColor: 'grey.300',
           }}
-          sx={{ minWidth: 90 }}
         >
           Reset
         </Button>
       </Box>
 
-      <Typography
-        variant='h5'
-        sx={{ fontWeight: 700, color: 'text.primary', letterSpacing: 0.5, mb: 2 }}
-        aria-label='result'
+      <Box
+        sx={{
+          width: '100%',
+          textAlign: 'center',
+          py: 1.5,
+          borderRadius: 2,
+          bgcolor: result && !result.error ? 'rgba(25, 118, 210, 0.06)' : 'transparent',
+        }}
       >
-        {result ? (
-          result.error ? (
-            <span>{result.error}</span>
-          ) : (
-            <span>{result.nearest.toFraction(true)}</span>
-          )
-        ) : (
-          '—'
-        )}
-      </Typography>
-    </div>
+        <Typography
+          variant='h4'
+          aria-label='result'
+          sx={{
+            fontWeight: 700,
+            color: result ? (result.error ? 'error.main' : 'primary.dark') : 'grey.400',
+            letterSpacing: 0.5,
+          }}
+        >
+          {result ? (result.error ? result.error : result.nearest.toFraction(true)) : '\u2014'}
+        </Typography>
+      </Box>
+    </Box>
   );
 }

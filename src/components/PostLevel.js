@@ -303,7 +303,7 @@ export default function PostLevel() {
           </Typography>
           <TextField
             size='small'
-            placeholder='e.g. 60 1/4'
+
             value={m.inches}
             onChange={(e) => updateReading(i, e.target.value)}
             fullWidth
