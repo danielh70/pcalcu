@@ -4,32 +4,9 @@ import userEvent from '@testing-library/user-event';
 import TapeCalc from './TapeCalc';
 
 describe('TapeCalc UI', () => {
-  test('shows only nearest 1/16 result after compute', async () => {
+  test('basic calculation: 10 ÷ 1/2 = 20', async () => {
     render(<TapeCalc />);
 
-    // Enter 10 in Length 1 via keypad
-    await userEvent.click(screen.getByRole('button', { name: '1' }));
-    await userEvent.click(screen.getByRole('button', { name: '0' }));
-
-    // Click divide (default) to switch active field to Length 2
-    await userEvent.click(screen.getByRole('button', { name: /divide/i }));
-
-    // Enter 1/2 in Length 2 via fraction button
-    await userEvent.click(screen.getByRole('button', { name: '1/2' }));
-
-    // Calculate
-    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
-
-    // 10 ÷ 1/2 = 20
-    const result = await screen.findByLabelText('result');
-    expect(result).toHaveTextContent(/20/);
-    expect(result).not.toHaveTextContent(/nearest 1\/16/);
-  });
-
-  test('reset button clears inputs and result', async () => {
-    render(<TapeCalc />);
-
-    // Enter values and compute
     await userEvent.click(screen.getByRole('button', { name: '1' }));
     await userEvent.click(screen.getByRole('button', { name: '0' }));
     await userEvent.click(screen.getByRole('button', { name: /divide/i }));
@@ -37,75 +14,119 @@ describe('TapeCalc UI', () => {
     await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
 
     const result = screen.getByLabelText('result');
-    expect(result).toHaveTextContent(/20/);
-
-    // Reset
-    await userEvent.click(screen.getByRole('button', { name: /reset/i }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('0');
-    expect(screen.getByTestId('length2-value')).toHaveTextContent('0');
-    expect(result).toHaveTextContent(/\u2014/);
+    expect(result).toHaveTextContent('20');
   });
 
-  test('operator buttons perform the correct operation', async () => {
+  test('result chaining: 155 - 5 = 150, then ÷ 3 = 50', async () => {
     render(<TapeCalc />);
 
+    // 155 - 5
+    await userEvent.click(screen.getByRole('button', { name: '1' }));
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: /subtract/i }));
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+    expect(screen.getByLabelText('result')).toHaveTextContent('150');
+
+    // chain: ÷ 3
+    await userEvent.click(screen.getByRole('button', { name: /divide/i }));
+    await userEvent.click(screen.getByRole('button', { name: '3' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+    expect(screen.getByLabelText('result')).toHaveTextContent('50');
+  });
+
+  test('typing digit after result starts fresh calculation', async () => {
+    render(<TapeCalc />);
+
+    // 8 + 2 = 10
+    await userEvent.click(screen.getByRole('button', { name: '8' }));
+    await userEvent.click(screen.getByRole('button', { name: /add/i }));
+    await userEvent.click(screen.getByRole('button', { name: '2' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+    expect(screen.getByLabelText('result')).toHaveTextContent('10');
+
+    // type "7" — should clear and start fresh
+    await userEvent.click(screen.getByRole('button', { name: '7' }));
+    expect(screen.getByTestId('display-value')).toHaveTextContent('7');
+    // expression tape should be empty (non-breaking space)
+    expect(screen.getByTestId('expression-tape').textContent).toBe('');
+  });
+
+  test('clear button resets everything', async () => {
+    render(<TapeCalc />);
+
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: /add/i }));
+    await userEvent.click(screen.getByRole('button', { name: '3' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+    expect(screen.getByLabelText('result')).toHaveTextContent('8');
+
+    await userEvent.click(screen.getByRole('button', { name: /clear/i }));
+    expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    expect(screen.getByTestId('expression-tape').textContent).toBe('');
+  });
+
+  test('expression tape shows running expression', async () => {
+    render(<TapeCalc />);
+
+    // in length1 phase, tape is empty
+    expect(screen.getByTestId('expression-tape').textContent).toBe('');
+
+    await userEvent.click(screen.getByRole('button', { name: '1' }));
+    await userEvent.click(screen.getByRole('button', { name: '0' }));
+
+    // tap operator → tape shows "10 +"
+    await userEvent.click(screen.getByRole('button', { name: /add/i }));
+    expect(screen.getByTestId('expression-tape')).toHaveTextContent('10 +');
+
+    // enter length2 and calculate → tape shows full expression
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+    expect(screen.getByTestId('expression-tape')).toHaveTextContent('10 + 5 =');
+  });
+
+  test('all four operator buttons exist and work', async () => {
+    render(<TapeCalc />);
+
+    expect(screen.getByRole('button', { name: /divide/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /subtract/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /multiply/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /divide/i })).toBeInTheDocument();
 
-    // Enter 10 in Length 1
+    // 10 × 1/2 = 5
     await userEvent.click(screen.getByRole('button', { name: '1' }));
     await userEvent.click(screen.getByRole('button', { name: '0' }));
-
-    // Click multiply (switches to Length 2)
     await userEvent.click(screen.getByRole('button', { name: /multiply/i }));
-
-    // Enter 1/2 in Length 2
     await userEvent.click(screen.getByRole('button', { name: '1/2' }));
-
     await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
 
-    const result = screen.getByLabelText('result');
-    expect(result).toHaveTextContent(/5/);
-
-    // Switch to subtract and recalculate
-    await userEvent.click(screen.getByRole('button', { name: /subtract/i }));
-    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
-    expect(result).toHaveTextContent(/9 1\/2|9.5|19\/2/);
+    expect(screen.getByLabelText('result')).toHaveTextContent('5');
   });
 
-  test('selection indicator toggles on operator click', async () => {
+  test('selected operator has aria-pressed', async () => {
     render(<TapeCalc />);
+
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
 
     const addBtn = screen.getByRole('button', { name: /add/i });
     const mulBtn = screen.getByRole('button', { name: /multiply/i });
-    const subBtn = screen.getByRole('button', { name: /subtract/i });
 
     await userEvent.click(addBtn);
-    expect(addBtn).toHaveClass('Mui-selected');
-    expect(mulBtn).not.toHaveClass('Mui-selected');
+    expect(addBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(mulBtn).toHaveAttribute('aria-pressed', 'false');
 
+    // switch to multiply
     await userEvent.click(mulBtn);
-    expect(mulBtn).toHaveClass('Mui-selected');
-    expect(addBtn).not.toHaveClass('Mui-selected');
-
-    await userEvent.click(subBtn);
-    expect(subBtn).toHaveClass('Mui-selected');
-    expect(mulBtn).not.toHaveClass('Mui-selected');
+    expect(mulBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(addBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('selected operator shows non-transparent background', async () => {
-    render(<TapeCalc />);
-    const divideBtn = screen.getByRole('button', { name: /divide/i });
-
-    await userEvent.click(divideBtn);
-    const styles = window.getComputedStyle(divideBtn);
-    expect(styles.backgroundColor).not.toBe('transparent');
-    expect(styles.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
-  });
-
-  test('fraction appends to whole number in active field', async () => {
+  test('fraction appends to whole number', async () => {
     render(<TapeCalc />);
 
     await userEvent.click(screen.getByRole('button', { name: '1' }));
@@ -113,7 +134,7 @@ describe('TapeCalc UI', () => {
     await userEvent.click(screen.getByRole('button', { name: '3' }));
     await userEvent.click(screen.getByRole('button', { name: '7/8' }));
 
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('143 7/8');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('143 7/8');
   });
 
   test('fraction replaces existing fraction', async () => {
@@ -121,10 +142,10 @@ describe('TapeCalc UI', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '5' }));
     await userEvent.click(screen.getByRole('button', { name: '1/2' }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5 1/2');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('5 1/2');
 
     await userEvent.click(screen.getByRole('button', { name: '3/4' }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5 3/4');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('5 3/4');
   });
 
   test('backspace removes entire fraction at once', async () => {
@@ -132,57 +153,48 @@ describe('TapeCalc UI', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '5' }));
     await userEvent.click(screen.getByRole('button', { name: '1/2' }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5 1/2');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('5 1/2');
 
     await userEvent.click(screen.getByRole('button', { name: /backspace/i }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('5');
   });
 
-  test('tapping operation auto-switches active field to Length 2', async () => {
+  test('backspace removes single digits', async () => {
     render(<TapeCalc />);
 
-    await userEvent.click(screen.getByRole('button', { name: '8' }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('8');
-
-    // Click add (switches to Length 2)
-    await userEvent.click(screen.getByRole('button', { name: /add/i }));
-
-    // Digits now go to Length 2
+    await userEvent.click(screen.getByRole('button', { name: '1' }));
+    await userEvent.click(screen.getByRole('button', { name: '2' }));
     await userEvent.click(screen.getByRole('button', { name: '3' }));
-    expect(screen.getByTestId('length2-value')).toHaveTextContent('3');
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('8');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('123');
+
+    await userEvent.click(screen.getByRole('button', { name: /backspace/i }));
+    expect(screen.getByTestId('display-value')).toHaveTextContent('12');
   });
 
-  test('clear entry button clears only the active field', async () => {
+  test('sixteenths panel toggles on more button', async () => {
     render(<TapeCalc />);
 
-    // Enter 5 in Length 1
-    await userEvent.click(screen.getByRole('button', { name: '5' }));
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5');
+    // 1/16 should not be visible initially
+    expect(screen.queryByRole('button', { name: '1/16' })).not.toBeInTheDocument();
 
-    // Switch to Length 2 and enter 3
-    await userEvent.click(screen.getByRole('button', { name: /add/i }));
-    await userEvent.click(screen.getByRole('button', { name: '3' }));
-    expect(screen.getByTestId('length2-value')).toHaveTextContent('3');
+    // tap more
+    await userEvent.click(screen.getByRole('button', { name: /more fractions/i }));
+    expect(screen.getByRole('button', { name: '1/16' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '15/16' })).toBeInTheDocument();
 
-    // Clear entry clears Length 2 only
-    await userEvent.click(screen.getByRole('button', { name: /clear entry/i }));
-    expect(screen.getByTestId('length2-value')).toHaveTextContent('0');
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5');
+    // tap fewer
+    await userEvent.click(screen.getByRole('button', { name: /fewer fractions/i }));
+    expect(screen.queryByRole('button', { name: '1/16' })).not.toBeInTheDocument();
   });
 
-  test('tapping display area switches active field', async () => {
+  test('division by zero shows error', async () => {
     render(<TapeCalc />);
 
-    // Enter 5 in Length 1 (default active)
     await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: /divide/i }));
+    await userEvent.click(screen.getByRole('button', { name: '0' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
 
-    // Tap Length 2 display to switch
-    await userEvent.click(screen.getByLabelText(/length 2/i));
-
-    // Digits now go to Length 2
-    await userEvent.click(screen.getByRole('button', { name: '9' }));
-    expect(screen.getByTestId('length2-value')).toHaveTextContent('9');
-    expect(screen.getByTestId('length1-value')).toHaveTextContent('5');
+    expect(screen.getByTestId('display-value')).toHaveTextContent('Division by zero');
   });
 });

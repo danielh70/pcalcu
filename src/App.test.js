@@ -12,9 +12,8 @@ test('renders top navigation and tabs', () => {
 test('can switch tabs and see each tool', async () => {
   render(<App />);
 
-  // Tape Calc is now the default tab
-  expect(screen.getByLabelText(/length 1/i)).toBeInTheDocument();
-  expect(screen.getByLabelText(/length 2/i)).toBeInTheDocument();
+  // Tape Calc is now the default tab — check for its display
+  expect(screen.getByLabelText('result')).toBeInTheDocument();
 
   await userEvent.click(screen.getByRole('tab', { name: /systems/i }));
   expect(screen.getByText(/gap:/i)).toBeInTheDocument();
