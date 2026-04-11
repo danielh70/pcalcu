@@ -74,7 +74,7 @@ const STYLES = `
   -webkit-user-select: none;
 }
 @media (max-width: 600px) {
-  .tc-calc { border-radius: 0; }
+  .tc-calc { border-radius: 0; flex: 1; }
 }
 
 /* ── display area ── */
@@ -127,6 +127,9 @@ const STYLES = `
   padding: 6px;
   background: #2d2d30;
 }
+@media (max-width: 600px) {
+  .tc-keypad { flex: 1; display: flex; flex-direction: column; }
+}
 @media (min-width: 601px) {
   .tc-keypad { padding: 8px; }
 }
@@ -137,6 +140,9 @@ const STYLES = `
   flex-direction: column;
   gap: 5px;
   transition: opacity 150ms ease;
+}
+@media (max-width: 600px) {
+  .tc-keys { flex: 1; justify-content: space-between; }
 }
 .tc-keys--hidden {
   opacity: 0;

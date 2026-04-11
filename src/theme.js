@@ -3,7 +3,7 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
   shape: { borderRadius: 6 },
   palette: {
-    background: { default: '#f7f9fb', paper: '#ffffff' },
+    background: { default: '#e8e9ed', paper: '#ffffff' },
     primary: {
       main: '#1976d2',
       dark: '#115293',
@@ -15,10 +15,10 @@ const theme = createTheme({
     MuiTabs: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          border: '1px solid rgba(2, 6, 23, 0.06)',
+          borderRadius: 0,
+          backgroundColor: 'rgba(255,255,255,0.97)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: 'none',
           overflow: 'hidden',
         },
         indicator: {

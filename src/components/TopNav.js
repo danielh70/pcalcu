@@ -8,8 +8,8 @@ export default function TopNav() {
     <AppBar
       position='sticky'
       color='primary'
-      elevation={2}
-      sx={{ minHeight: 56, justifyContent: 'center' }}
+      elevation={0}
+      sx={{ minHeight: 56, justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
     >
       <Toolbar sx={{ minHeight: 56, px: { xs: 1, sm: 3 } }}>
         <Typography variant='h6' sx={{ fontWeight: 700, letterSpacing: 1, flexGrow: 1 }}>

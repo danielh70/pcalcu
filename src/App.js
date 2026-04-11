@@ -44,7 +44,7 @@ export default function App() {
           <Tab label='Tape Calc' id='tab-0' aria-controls='tabpanel-0' />
           <Tab label='Systems' id='tab-1' aria-controls='tabpanel-1' />
         </Tabs>
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ mb: { xs: 0, sm: 2 } }} />
         {/* <TabPanel value={value} index={0}>
           <div className='tab-content-card'>
             <PostLevel />
