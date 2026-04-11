@@ -45,8 +45,7 @@ export function computeTapeOperation(aFraction, bFraction, op) {
 
 const OP_SYMBOLS = { divide: '\u00f7', add: '+', subtract: '\u2212', multiply: '\u00d7' };
 const OPS = ['divide', 'add', 'subtract', 'multiply'];
-const EIGHTHS = ['1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
-const SIXTEENTHS = ['1/16', '3/16', '5/16', '7/16', '9/16', '11/16', '13/16', '15/16'];
+const FRACTIONS = ['1/16', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
 
 const haptic = () => {
   try { navigator.vibrate(10); } catch (e) { /* no-op on desktop */ }
@@ -138,20 +137,6 @@ const STYLES = `
   background: #2e3a44;
   box-shadow: none;
 }
-.tc-frac-sm { font-size: .7rem; }
-
-/* ── more toggle ── */
-.tc-more {
-  background: #3a4550;
-  color: #6a8a9e;
-  font-size: .8rem;
-  box-shadow: 0 1px 0 #2a3540;
-}
-.tc-more:active {
-  background: #2e3a44;
-  box-shadow: none;
-}
-
 /* ── equals key ── */
 .tc-eq {
   background: linear-gradient(180deg, #2eaadc 0%, #2196d3 100%);
@@ -182,7 +167,6 @@ export default function TapeCalc() {
   const [resultDisplay, setResultDisplay] = React.useState('');
   const [chainFrac, setChainFrac] = React.useState(null);
   const [error, setError] = React.useState(null);
-  const [showMore, setShowMore] = React.useState(false);
 
   /* ── derived display values ── */
 
@@ -319,7 +303,6 @@ export default function TapeCalc() {
     setResultDisplay('');
     setChainFrac(null);
     setError(null);
-    setShowMore(false);
   };
 
   /* ── render ── */
@@ -330,12 +313,11 @@ export default function TapeCalc() {
   return (
     <Box
       sx={{
-        mx: { xs: '-12px', sm: 'auto' },
-        mt: { xs: '-22px', sm: 0 },
-        mb: { xs: '-26px', sm: 0 },
-        maxWidth: { xs: 'none', sm: '400px' },
-        width: '100%',
-        borderRadius: { xs: '12px', sm: '16px' },
+        mx: { xs: '-12px', sm: '-16px' },
+        mt: { xs: '-22px', sm: '-32px' },
+        mb: { xs: '-26px', sm: '-36px' },
+        width: 'auto',
+        borderRadius: '14px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -411,9 +393,9 @@ export default function TapeCalc() {
           background: '#2c2c2e',
         }}
       >
-        {/* fraction grid — eighths + toggle (4 columns) */}
+        {/* fraction grid — 4x2 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
-          {EIGHTHS.map((frac) => (
+          {FRACTIONS.map((frac) => (
             <button
               key={frac}
               className='tc-btn tc-frac'
@@ -423,34 +405,7 @@ export default function TapeCalc() {
               {frac}
             </button>
           ))}
-          <button
-            className='tc-btn tc-more'
-            aria-label={showMore ? 'fewer fractions' : 'more fractions'}
-            onClick={() => {
-              haptic();
-              setShowMore((v) => !v);
-            }}
-            style={{ height: 38, borderRadius: 6 }}
-          >
-            {showMore ? '\u25b4' : '\u25be'}
-          </button>
         </div>
-
-        {/* fraction grid — sixteenths (expanded, 4 columns) */}
-        {showMore && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
-            {SIXTEENTHS.map((frac) => (
-              <button
-                key={frac}
-                className='tc-btn tc-frac tc-frac-sm'
-                onClick={() => handleFraction(frac)}
-                style={{ height: 38, borderRadius: 6 }}
-              >
-                {frac}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* operator row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>

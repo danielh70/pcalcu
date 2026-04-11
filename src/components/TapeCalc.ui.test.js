@@ -171,20 +171,17 @@ describe('TapeCalc UI', () => {
     expect(screen.getByTestId('display-value')).toHaveTextContent('12');
   });
 
-  test('sixteenths panel toggles on more button', async () => {
+  test('all 8 fraction buttons are visible', () => {
     render(<TapeCalc />);
 
-    // 1/16 should not be visible initially
-    expect(screen.queryByRole('button', { name: '1/16' })).not.toBeInTheDocument();
-
-    // tap more
-    await userEvent.click(screen.getByRole('button', { name: /more fractions/i }));
     expect(screen.getByRole('button', { name: '1/16' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '15/16' })).toBeInTheDocument();
-
-    // tap fewer
-    await userEvent.click(screen.getByRole('button', { name: /fewer fractions/i }));
-    expect(screen.queryByRole('button', { name: '1/16' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1/8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1/4' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3/8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1/2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '5/8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3/4' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '7/8' })).toBeInTheDocument();
   });
 
   test('division by zero shows error', async () => {
