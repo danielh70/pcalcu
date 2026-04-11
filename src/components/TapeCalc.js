@@ -53,11 +53,11 @@ const haptic = () => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   Scoped styles (injected once via <style>)
+   Scoped styles
    ═══════════════════════════════════════════════════════════════ */
 
 const STYLES = `
-/* ── base reset ── */
+/* ── button reset ── */
 .tc-btn {
   border: none;
   outline: none;
@@ -71,6 +71,7 @@ const STYLES = `
   justify-content: center;
   font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
   transition: transform 80ms ease, box-shadow 80ms ease, background 80ms ease;
+  border-radius: 8px;
 }
 .tc-btn:active:not(:disabled) {
   transform: translateY(1px);
@@ -80,9 +81,9 @@ const STYLES = `
 .tc-num {
   background: linear-gradient(180deg, #555 0%, #4a4a4a 100%);
   color: #fff;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 500;
-  box-shadow: 0 2px 0 #333, 0 1px 3px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 0 #333, 0 1px 3px rgba(0,0,0,.12);
 }
 .tc-num:active {
   background: #3a3a3a;
@@ -93,9 +94,9 @@ const STYLES = `
 .tc-action {
   background: linear-gradient(180deg, #4a4a4a 0%, #3e3e3e 100%);
   color: #aaa;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 600;
-  box-shadow: 0 2px 0 #2a2a2a, 0 1px 3px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 0 #2a2a2a, 0 1px 3px rgba(0,0,0,.12);
 }
 .tc-action:active {
   background: #333;
@@ -107,9 +108,9 @@ const STYLES = `
 .tc-op {
   background: linear-gradient(180deg, #555 0%, #4a4a4a 100%);
   color: #e8a33e;
-  font-size: 1.15rem;
-  font-weight: 600;
-  box-shadow: 0 2px 0 #333, 0 1px 3px rgba(0,0,0,0.12);
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 2px 0 #333, 0 1px 3px rgba(0,0,0,.12);
 }
 .tc-op:active {
   background: #3a3a3a;
@@ -118,7 +119,7 @@ const STYLES = `
 .tc-op[aria-pressed="true"] {
   background: #e8941a;
   color: #fff;
-  box-shadow: 0 2px 0 #b8741a, 0 0 8px rgba(232,148,26,0.25);
+  box-shadow: 0 2px 0 #b8741a, 0 0 8px rgba(232,148,26,.25);
 }
 .tc-op[aria-pressed="true"]:active {
   background: #d68418;
@@ -129,21 +130,21 @@ const STYLES = `
 .tc-frac {
   background: #3a4550;
   color: #8bb4d6;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: .85rem;
   box-shadow: 0 1px 0 #2a3540;
-  font-size: 0.8rem;
 }
 .tc-frac:active {
   background: #2e3a44;
   box-shadow: none;
 }
-.tc-frac-sm { font-size: 0.65rem; }
+.tc-frac-sm { font-size: .7rem; }
 
 /* ── more toggle ── */
 .tc-more {
   background: #3a4550;
   color: #6a8a9e;
-  font-size: 0.7rem;
+  font-size: .8rem;
   box-shadow: 0 1px 0 #2a3540;
 }
 .tc-more:active {
@@ -153,18 +154,18 @@ const STYLES = `
 
 /* ── equals key ── */
 .tc-eq {
-  background: linear-gradient(180deg, #f0a030 0%, #e8941a 100%);
+  background: linear-gradient(180deg, #2eaadc 0%, #2196d3 100%);
   color: #fff;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  box-shadow: 0 2px 0 #b8741a, 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 0 #1a78aa, 0 1px 4px rgba(0,0,0,.15);
 }
 .tc-eq:active:not(:disabled) {
-  background: #d68418;
-  box-shadow: 0 1px 0 #b8741a;
+  background: #1a88bb;
+  box-shadow: 0 1px 0 #1a78aa;
 }
 .tc-eq:disabled {
-  opacity: 0.35;
+  opacity: .35;
   cursor: default;
 }
 `;
@@ -235,7 +236,10 @@ export default function TapeCalc() {
       return;
     }
     const setter = phase === 'length1' ? setLength1 : setLength2;
-    setter((prev) => prev + digit);
+    setter((prev) => {
+      if (/\d+\/\d+/.test(prev)) return digit;
+      return prev + digit;
+    });
   };
 
   const handleFraction = (frac) => {
@@ -321,17 +325,22 @@ export default function TapeCalc() {
   /* ── render ── */
 
   const eqDisabled = phase !== 'length2' || !length2;
+  const mainFontSize = mainDisplay.length > 12 ? 24 : mainDisplay.length > 8 ? 30 : 38;
 
   return (
     <Box
       sx={{
-        mx: { xs: '-12px', sm: '-16px' },
-        mt: { xs: '-22px', sm: '-32px' },
-        mb: { xs: '-26px', sm: '-36px' },
-        borderRadius: '14px',
+        mx: { xs: '-12px', sm: 'auto' },
+        mt: { xs: '-22px', sm: 0 },
+        mb: { xs: '-26px', sm: 0 },
+        maxWidth: { xs: 'none', sm: '400px' },
+        width: '100%',
+        borderRadius: { xs: '12px', sm: '16px' },
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        minHeight: { xs: 'calc(100vh - 200px)', sm: 'auto' },
+        background: '#1c1c1e',
       }}
     >
       <style>{STYLES}</style>
@@ -339,23 +348,24 @@ export default function TapeCalc() {
       {/* ── display area ── */}
       <div
         style={{
-          background: '#f7f8fa',
-          padding: '10px 16px 8px',
+          background: '#1a1a1c',
+          padding: '20px 20px 14px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
           justifyContent: 'flex-end',
-          minHeight: 60,
+          minHeight: 90,
+          borderBottom: '1px solid #333',
         }}
       >
         <div
           data-testid='expression-tape'
           style={{
             fontSize: 14,
-            color: '#999',
-            fontFamily: "'Roboto Mono', monospace",
-            minHeight: 18,
-            lineHeight: '18px',
+            color: '#777',
+            fontFamily: "'Roboto Mono', 'SF Mono', monospace",
+            minHeight: 20,
+            lineHeight: '20px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -369,10 +379,10 @@ export default function TapeCalc() {
           data-testid='display-value'
           aria-label='result'
           style={{
-            fontSize: mainDisplay.length > 12 ? 22 : mainDisplay.length > 8 ? 26 : 32,
-            fontWeight: 600,
-            color: error ? '#e53935' : '#1a1a1a',
-            fontFamily: "'Roboto Mono', monospace",
+            fontSize: mainFontSize,
+            fontWeight: 700,
+            color: error ? '#e53935' : '#f0f0f0',
+            fontFamily: "'Roboto Mono', 'SF Mono', monospace",
             lineHeight: 1.2,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -380,7 +390,7 @@ export default function TapeCalc() {
             width: '100%',
             textAlign: 'right',
             transition: 'font-size 120ms ease',
-            minHeight: 38,
+            minHeight: 46,
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'flex-end',
@@ -393,21 +403,22 @@ export default function TapeCalc() {
       {/* ── keypad area ── */}
       <div
         style={{
-          background: '#2c2c2e',
-          padding: '8px 6px 10px',
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: 4,
+          padding: 6,
+          background: '#2c2c2e',
         }}
       >
-        {/* fraction row — eighths */}
-        <div style={{ display: 'flex', gap: 3 }}>
+        {/* fraction grid — eighths + toggle (4 columns) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
           {EIGHTHS.map((frac) => (
             <button
               key={frac}
               className='tc-btn tc-frac'
               onClick={() => handleFraction(frac)}
-              style={{ flex: 1, height: 34, borderRadius: 6 }}
+              style={{ height: 38, borderRadius: 6 }}
             >
               {frac}
             </button>
@@ -419,21 +430,21 @@ export default function TapeCalc() {
               haptic();
               setShowMore((v) => !v);
             }}
-            style={{ width: 36, minWidth: 36, height: 34, borderRadius: 6 }}
+            style={{ height: 38, borderRadius: 6 }}
           >
             {showMore ? '\u25b4' : '\u25be'}
           </button>
         </div>
 
-        {/* fraction row — sixteenths (expanded) */}
+        {/* fraction grid — sixteenths (expanded, 4 columns) */}
         {showMore && (
-          <div style={{ display: 'flex', gap: 3 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
             {SIXTEENTHS.map((frac) => (
               <button
                 key={frac}
                 className='tc-btn tc-frac tc-frac-sm'
                 onClick={() => handleFraction(frac)}
-                style={{ flex: 1, height: 34, borderRadius: 6 }}
+                style={{ height: 38, borderRadius: 6 }}
               >
                 {frac}
               </button>
@@ -441,8 +452,8 @@ export default function TapeCalc() {
           </div>
         )}
 
-        {/* operation row */}
-        <div style={{ display: 'flex', gap: 4 }}>
+        {/* operator row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
           {OPS.map((key) => (
             <button
               key={key}
@@ -450,41 +461,45 @@ export default function TapeCalc() {
               aria-label={key}
               aria-pressed={op === key}
               onClick={() => handleOp(key)}
-              style={{ flex: 1, height: 44, borderRadius: 8 }}
+              style={{ height: 46, borderRadius: 8 }}
             >
               {OP_SYMBOLS[key]}
             </button>
           ))}
         </div>
 
-        {/* number grid — 1-9 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+        {/* number pad — fills remaining vertical space */}
+        <div
+          style={{
+            flex: 1,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: 'repeat(4, 1fr)',
+            gap: 4,
+          }}
+        >
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
             <button
               key={d}
               className='tc-btn tc-num'
               onClick={() => handleDigit(d)}
-              style={{ height: 52, borderRadius: 10 }}
+              style={{ minHeight: 52, borderRadius: 10 }}
             >
               {d}
             </button>
           ))}
-        </div>
-
-        {/* bottom row — C, 0, backspace */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
           <button
             className='tc-btn tc-action tc-action-c'
             aria-label='clear'
             onClick={handleClear}
-            style={{ height: 52, borderRadius: 10 }}
+            style={{ minHeight: 52, borderRadius: 10 }}
           >
             C
           </button>
           <button
             className='tc-btn tc-num'
             onClick={() => handleDigit('0')}
-            style={{ height: 52, borderRadius: 10 }}
+            style={{ minHeight: 52, borderRadius: 10 }}
           >
             0
           </button>
@@ -492,7 +507,7 @@ export default function TapeCalc() {
             className='tc-btn tc-action'
             aria-label='backspace'
             onClick={handleBackspace}
-            style={{ height: 52, borderRadius: 10, fontSize: '1.2rem' }}
+            style={{ minHeight: 52, borderRadius: 10, fontSize: '1.2rem' }}
           >
             {'\u232b'}
           </button>
@@ -504,7 +519,7 @@ export default function TapeCalc() {
           aria-label='calculate'
           onClick={handleEquals}
           disabled={eqDisabled}
-          style={{ height: 52, borderRadius: 10, width: '100%' }}
+          style={{ minHeight: 52, borderRadius: 10, width: '100%' }}
         >
           =
         </button>
