@@ -44,8 +44,14 @@ export function computeTapeOperation(aFraction, bFraction, op) {
 
 const OP_SYMBOLS = { divide: '\u00f7', add: '+', subtract: '\u2212', multiply: '\u00d7' };
 const OPS = ['divide', 'add', 'subtract', 'multiply'];
-const FRACTIONS_ROW1 = ['1/16', '1/8', '1/4', '3/8'];
-const FRACTIONS_ROW2 = ['1/2', '5/8', '3/4', '7/8'];
+
+/* every useful sixteenth in ascending order (simplified forms) */
+const FRAC_GRID = [
+  '1/16', '1/8',  '3/16', '1/4',
+  '5/16', '3/8',  '7/16', '1/2',
+  '9/16', '5/8', '11/16', '3/4',
+  '13/16', '7/8', '15/16',
+];
 
 const haptic = () => {
   try { navigator.vibrate(10); } catch (e) { /* no-op on desktop */ }
@@ -115,18 +121,52 @@ const STYLES = `
 }
 .tc-main--error { color: #ff3b30; }
 
-/* ── keypad ── */
+/* ── keypad wrapper (positioned for overlay) ── */
 .tc-keypad {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  position: relative;
   padding: 6px;
   background: #2d2d30;
 }
 @media (min-width: 601px) {
-  .tc-keypad { padding: 8px; gap: 6px; }
+  .tc-keypad { padding: 8px; }
 }
 
+/* ── normal keys panel ── */
+.tc-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: opacity 150ms ease;
+}
+.tc-keys--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── fraction selection panel (overlay) ── */
+.tc-frac-panel {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 5px;
+  padding: 6px;
+  background: #2d2d30;
+  transition: opacity 150ms ease;
+  z-index: 1;
+}
+.tc-frac-panel--hidden {
+  opacity: 0;
+  z-index: -1;
+}
+
+@media (min-width: 601px) {
+  .tc-keys { gap: 6px; }
+  .tc-frac-panel { gap: 6px; padding: 8px; }
+}
+
+/* ── grid row helpers ── */
 .tc-row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
 .tc-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 @media (min-width: 601px) {
@@ -153,25 +193,15 @@ const STYLES = `
   margin: 0;
 }
 
-/* ── number buttons ── */
+/* ── number buttons (taller now that fraction rows are gone) ── */
 .tc-num {
   background: #505055;
   color: #fff;
   font-size: 1.35rem;
   font-weight: 500;
-  min-height: 56px;
+  min-height: 70px;
 }
 .tc-num:active { background: #3a3a3e; }
-
-/* ── fraction buttons ── */
-.tc-frac {
-  background: #3a4a5c;
-  color: #a8c4e0;
-  font-size: .9rem;
-  font-weight: 600;
-  min-height: 44px;
-}
-.tc-frac:active { background: #2e3e50; }
 
 /* ── operator buttons ── */
 .tc-op {
@@ -179,7 +209,7 @@ const STYLES = `
   color: #f5a623;
   font-size: 1.25rem;
   font-weight: 700;
-  min-height: 48px;
+  min-height: 54px;
 }
 .tc-op:active { background: #3a3a3e; }
 .tc-op[aria-pressed="true"] {
@@ -196,10 +226,39 @@ const STYLES = `
   color: #aaa;
   font-size: 1.15rem;
   font-weight: 600;
-  min-height: 56px;
+  min-height: 70px;
 }
 .tc-action:active { background: #3a3a3e; }
 .tc-clear { color: #ff3b30; }
+
+/* ── FRAC mode button (bottom row) ── */
+.tc-frac-btn {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  min-height: 70px;
+}
+.tc-frac-btn:active { background: #2e3e50; }
+
+/* ── fraction buttons inside the panel ── */
+.tc-frac {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .9rem;
+  font-weight: 600;
+}
+.tc-frac:active { background: #2e3e50; }
+
+/* ── close button inside fraction panel ── */
+.tc-frac-close {
+  background: #505055;
+  color: #ff3b30;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.tc-frac-close:active { background: #3a3a3e; }
 
 /* ── equals button ── */
 .tc-eq {
@@ -207,7 +266,7 @@ const STYLES = `
   color: #fff;
   font-size: 1.5rem;
   font-weight: 700;
-  min-height: 52px;
+  min-height: 58px;
   width: 100%;
 }
 .tc-eq:active:not(:disabled) { background: #1e5f6b; }
@@ -219,12 +278,6 @@ const STYLES = `
    ═══════════════════════════════════════════════════════════════ */
 
 export default function TapeCalc() {
-  /*
-   * phase:
-   *   "input"    — user is typing a number (first or second operand)
-   *   "operator" — user just pressed an operator, awaiting next operand
-   *   "result"   — user just pressed equals, display shows result
-   */
   const [input, setInput] = React.useState('');
   const [operandA, setOperandA] = React.useState('');
   const [pendingOp, setPendingOp] = React.useState(null);
@@ -232,6 +285,7 @@ export default function TapeCalc() {
   const [resultText, setResultText] = React.useState('');
   const [chainFrac, setChainFrac] = React.useState(null);
   const [error, setError] = React.useState(null);
+  const [showFracPanel, setShowFracPanel] = React.useState(false);
 
   /* ── derived display ── */
 
@@ -312,6 +366,11 @@ export default function TapeCalc() {
     appendFraction(frac);
   };
 
+  const handleFracSelect = (frac) => {
+    handleFraction(frac);
+    setShowFracPanel(false);
+  };
+
   const handleBackspace = () => {
     haptic();
     if (phase === 'result') { clearAll(); return; }
@@ -343,7 +402,6 @@ export default function TapeCalc() {
     }
 
     if (pendingOp) {
-      /* chain: evaluate pending operation, use result as new operandA */
       try {
         const a = chainFrac || parseLength(operandA);
         const b = parseLength(input);
@@ -427,74 +485,84 @@ export default function TapeCalc() {
         </div>
       </div>
 
-      {/* ── keypad ── */}
+      {/* ── keypad (positioned container for panel overlay) ── */}
       <div className="tc-keypad">
-        {/* fraction row 1: 1/16  1/8  1/4  3/8 */}
-        <div className="tc-row4">
-          {FRACTIONS_ROW1.map((f) => (
-            <button key={f} className="tc-btn tc-frac" onClick={() => handleFraction(f)}>
-              {f}
-            </button>
-          ))}
-        </div>
 
-        {/* fraction row 2: 1/2  5/8  3/4  7/8 */}
-        <div className="tc-row4">
-          {FRACTIONS_ROW2.map((f) => (
-            <button key={f} className="tc-btn tc-frac" onClick={() => handleFraction(f)}>
-              {f}
-            </button>
-          ))}
-        </div>
-
-        {/* operators: ÷  +  −  × */}
-        <div className="tc-row4">
-          {OPS.map((key) => (
-            <button
-              key={key}
-              className="tc-btn tc-op"
-              aria-label={key}
-              aria-pressed={pendingOp === key}
-              onClick={() => handleOp(key)}
-            >
-              {OP_SYMBOLS[key]}
-            </button>
-          ))}
-        </div>
-
-        {/* number rows */}
-        {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, i) => (
-          <div key={i} className="tc-row3">
-            {row.map((d) => (
-              <button key={d} className="tc-btn tc-num" onClick={() => handleDigit(d)}>
-                {d}
+        {/* ── normal keys ── */}
+        <div className={`tc-keys${showFracPanel ? ' tc-keys--hidden' : ''}`}>
+          {/* operators */}
+          <div className="tc-row4">
+            {OPS.map((key) => (
+              <button
+                key={key}
+                className="tc-btn tc-op"
+                aria-label={key}
+                aria-pressed={pendingOp === key}
+                onClick={() => handleOp(key)}
+              >
+                {OP_SYMBOLS[key]}
               </button>
             ))}
           </div>
-        ))}
 
-        {/* bottom row: C  0  ⌫ */}
-        <div className="tc-row3">
-          <button className="tc-btn tc-action tc-clear" aria-label="clear" onClick={handleClear}>
-            C
-          </button>
-          <button className="tc-btn tc-num" onClick={() => handleDigit('0')}>
-            0
-          </button>
-          <button className="tc-btn tc-action" aria-label="backspace" onClick={handleBackspace}>
-            {'\u232b'}
+          {/* number rows */}
+          {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, i) => (
+            <div key={i} className="tc-row3">
+              {row.map((d) => (
+                <button key={d} className="tc-btn tc-num" onClick={() => handleDigit(d)}>
+                  {d}
+                </button>
+              ))}
+            </div>
+          ))}
+
+          {/* bottom row: C, 0, FRAC, ⌫ */}
+          <div className="tc-row4">
+            <button className="tc-btn tc-action tc-clear" aria-label="clear" onClick={handleClear}>
+              C
+            </button>
+            <button className="tc-btn tc-num" onClick={() => handleDigit('0')}>
+              0
+            </button>
+            <button
+              className="tc-btn tc-frac-btn"
+              aria-label="fractions"
+              onClick={() => { haptic(); setShowFracPanel(true); }}
+            >
+              FRAC
+            </button>
+            <button className="tc-btn tc-action" aria-label="backspace" onClick={handleBackspace}>
+              {'\u232b'}
+            </button>
+          </div>
+
+          {/* equals */}
+          <button
+            className="tc-btn tc-eq"
+            aria-label="calculate"
+            onClick={handleEquals}
+            disabled={eqDisabled}
+          >
+            =
           </button>
         </div>
 
-        {/* equals — full width */}
-        <button
-          className="tc-btn tc-eq"
-          aria-label="calculate"
-          onClick={handleEquals}
-          disabled={eqDisabled}
-        >
-          =
-        </button>
+        {/* ── fraction selection panel (overlay) ── */}
+        <div className={`tc-frac-panel${showFracPanel ? '' : ' tc-frac-panel--hidden'}`}>
+          {FRAC_GRID.map((f) => (
+            <button key={f} className="tc-btn tc-frac" onClick={() => handleFracSelect(f)}>
+              {f}
+            </button>
+          ))}
+          <button
+            className="tc-btn tc-frac-close"
+            aria-label="close fractions"
+            onClick={() => { haptic(); setShowFracPanel(false); }}
+          >
+            {'\u2715'}
+          </button>
+        </div>
+
       </div>
     </div>
   );
