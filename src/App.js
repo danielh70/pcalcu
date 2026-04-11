@@ -51,7 +51,7 @@ export default function App() {
           </div>
         </TabPanel> */}
         <TabPanel value={value} index={0}>
-          <div className='tab-content-card'>
+          <div className='tab-content-card tab-content-card--tapecalc'>
             <TapeCalc />
           </div>
         </TabPanel>

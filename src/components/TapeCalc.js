@@ -1,5 +1,4 @@
 import React from 'react';
-import Box from '@mui/material/Box';
 import { closestSixteenth, parseLength } from '../utils/measure';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -45,7 +44,8 @@ export function computeTapeOperation(aFraction, bFraction, op) {
 
 const OP_SYMBOLS = { divide: '\u00f7', add: '+', subtract: '\u2212', multiply: '\u00d7' };
 const OPS = ['divide', 'add', 'subtract', 'multiply'];
-const FRACTIONS = ['1/16', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
+const FRACTIONS_ROW1 = ['1/16', '1/8', '1/4', '3/8'];
+const FRACTIONS_ROW2 = ['1/2', '5/8', '3/4', '7/8'];
 
 const haptic = () => {
   try { navigator.vibrate(10); } catch (e) { /* no-op on desktop */ }
@@ -56,138 +56,198 @@ const haptic = () => {
    ═══════════════════════════════════════════════════════════════ */
 
 const STYLES = `
-/* ── button reset ── */
+/* ── calculator shell ── */
+.tc-calc {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1c1c1e;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (max-width: 600px) {
+  .tc-calc { border-radius: 0; }
+}
+
+/* ── display area ── */
+.tc-display {
+  padding: 16px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 80px;
+}
+@media (min-width: 601px) {
+  .tc-display { padding: 20px 20px 14px; min-height: 90px; }
+}
+
+.tc-expr {
+  font-size: .875rem;
+  color: #888;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  min-height: 1.25rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: right;
+}
+
+.tc-main {
+  font-weight: 700;
+  color: #f5f5f5;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: right;
+  min-height: 3rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  transition: font-size 100ms ease;
+}
+.tc-main--error { color: #ff3b30; }
+
+/* ── keypad ── */
+.tc-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  background: #2d2d30;
+}
+@media (min-width: 601px) {
+  .tc-keypad { padding: 8px; gap: 6px; }
+}
+
+.tc-row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.tc-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+@media (min-width: 601px) {
+  .tc-row4 { gap: 6px; }
+  .tc-row3 { gap: 6px; }
+}
+
+/* ── button base ── */
 .tc-btn {
   border: none;
   outline: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   user-select: none;
-  padding: 0;
-  margin: 0;
+  -webkit-user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
-  transition: transform 80ms ease, box-shadow 80ms ease, background 80ms ease;
   border-radius: 8px;
-}
-.tc-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transition: background 60ms ease;
+  padding: 0;
+  margin: 0;
 }
 
-/* ── number keys ── */
+/* ── number buttons ── */
 .tc-num {
-  background: linear-gradient(180deg, #555 0%, #4a4a4a 100%);
+  background: #505055;
   color: #fff;
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 500;
-  box-shadow: 0 2px 0 #333, 0 1px 3px rgba(0,0,0,.12);
+  min-height: 56px;
 }
-.tc-num:active {
-  background: #3a3a3a;
-  box-shadow: 0 1px 0 #333;
-}
+.tc-num:active { background: #3a3a3e; }
 
-/* ── action keys (C / backspace) ── */
-.tc-action {
-  background: linear-gradient(180deg, #4a4a4a 0%, #3e3e3e 100%);
-  color: #aaa;
-  font-size: 1.2rem;
+/* ── fraction buttons ── */
+.tc-frac {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .9rem;
   font-weight: 600;
-  box-shadow: 0 2px 0 #2a2a2a, 0 1px 3px rgba(0,0,0,.12);
+  min-height: 44px;
 }
-.tc-action:active {
-  background: #333;
-  box-shadow: 0 1px 0 #2a2a2a;
-}
-.tc-action-c { color: #e57373; }
+.tc-frac:active { background: #2e3e50; }
 
-/* ── operator keys ── */
+/* ── operator buttons ── */
 .tc-op {
-  background: linear-gradient(180deg, #555 0%, #4a4a4a 100%);
-  color: #e8a33e;
-  font-size: 1.2rem;
+  background: #505055;
+  color: #f5a623;
+  font-size: 1.25rem;
   font-weight: 700;
-  box-shadow: 0 2px 0 #333, 0 1px 3px rgba(0,0,0,.12);
+  min-height: 48px;
 }
-.tc-op:active {
-  background: #3a3a3a;
-  box-shadow: 0 1px 0 #333;
-}
+.tc-op:active { background: #3a3a3e; }
 .tc-op[aria-pressed="true"] {
-  background: #e8941a;
+  background: #f5a623;
   color: #fff;
-  box-shadow: 0 2px 0 #b8741a, 0 0 8px rgba(232,148,26,.25);
 }
 .tc-op[aria-pressed="true"]:active {
-  background: #d68418;
-  box-shadow: 0 1px 0 #b8741a;
+  background: #d4891a;
 }
 
-/* ── fraction keys ── */
-.tc-frac {
-  background: #3a4550;
-  color: #8bb4d6;
+/* ── action buttons (C / backspace) ── */
+.tc-action {
+  background: #505055;
+  color: #aaa;
+  font-size: 1.15rem;
   font-weight: 600;
-  font-size: .85rem;
-  box-shadow: 0 1px 0 #2a3540;
+  min-height: 56px;
 }
-.tc-frac:active {
-  background: #2e3a44;
-  box-shadow: none;
-}
-/* ── equals key ── */
+.tc-action:active { background: #3a3a3e; }
+.tc-clear { color: #ff3b30; }
+
+/* ── equals button ── */
 .tc-eq {
-  background: linear-gradient(180deg, #2eaadc 0%, #2196d3 100%);
+  background: #2a7c8c;
   color: #fff;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  box-shadow: 0 2px 0 #1a78aa, 0 1px 4px rgba(0,0,0,.15);
+  min-height: 52px;
+  width: 100%;
 }
-.tc-eq:active:not(:disabled) {
-  background: #1a88bb;
-  box-shadow: 0 1px 0 #1a78aa;
-}
-.tc-eq:disabled {
-  opacity: .35;
-  cursor: default;
-}
+.tc-eq:active:not(:disabled) { background: #1e5f6b; }
+.tc-eq:disabled { opacity: .35; cursor: default; }
 `;
 
 /* ═══════════════════════════════════════════════════════════════
-   Component
+   Component — state machine: input → operator → input → result
    ═══════════════════════════════════════════════════════════════ */
 
 export default function TapeCalc() {
-  const [length1, setLength1] = React.useState('');
-  const [length2, setLength2] = React.useState('');
-  const [op, setOp] = React.useState(null);
-  const [phase, setPhase] = React.useState('length1');
-  const [resultDisplay, setResultDisplay] = React.useState('');
+  /*
+   * phase:
+   *   "input"    — user is typing a number (first or second operand)
+   *   "operator" — user just pressed an operator, awaiting next operand
+   *   "result"   — user just pressed equals, display shows result
+   */
+  const [input, setInput] = React.useState('');
+  const [operandA, setOperandA] = React.useState('');
+  const [pendingOp, setPendingOp] = React.useState(null);
+  const [phase, setPhase] = React.useState('input');
+  const [resultText, setResultText] = React.useState('');
   const [chainFrac, setChainFrac] = React.useState(null);
   const [error, setError] = React.useState(null);
 
-  /* ── derived display values ── */
+  /* ── derived display ── */
 
-  const mainDisplay = (() => {
-    if (phase === 'result') return error || resultDisplay || '0';
-    if (phase === 'length2') return length2 || '0';
-    return length1 || '0';
-  })();
+  const mainDisplay = phase === 'result' ? (error || resultText || '0') : (input || '0');
 
   const expressionTape = (() => {
-    if (!op) return '';
-    const sym = OP_SYMBOLS[op];
-    if (phase === 'length2') return `${length1 || '0'} ${sym}`;
-    if (phase === 'result') return `${length1 || '0'} ${sym} ${length2 || '0'} =`;
-    return '';
+    if (!pendingOp) return '';
+    const sym = OP_SYMBOLS[pendingOp];
+    if (phase === 'result') return `${operandA || '0'} ${sym} ${input || '0'} =`;
+    return `${operandA || '0'} ${sym}`;
   })();
 
   /* ── input helpers ── */
 
-  const smartAppendFraction = (setter, frac) => {
-    setter((prev) => {
+  const appendFraction = (frac) => {
+    setInput((prev) => {
       const t = prev.trim();
       if (!t) return frac;
       if (/^\d+\/\d+$/.test(t)) return frac;
@@ -195,8 +255,8 @@ export default function TapeCalc() {
     });
   };
 
-  const smartBackspace = (setter) => {
-    setter((prev) => {
+  const removeLast = () => {
+    setInput((prev) => {
       if (!prev) return prev;
       const m = prev.match(/\s+\d+\/\d+$/);
       if (m) return prev.slice(0, -m[0].length);
@@ -205,22 +265,32 @@ export default function TapeCalc() {
     });
   };
 
+  const clearAll = () => {
+    setInput('');
+    setOperandA('');
+    setPendingOp(null);
+    setPhase('input');
+    setResultText('');
+    setChainFrac(null);
+    setError(null);
+  };
+
   /* ── handlers ── */
 
   const handleDigit = (digit) => {
     haptic();
     setError(null);
     if (phase === 'result') {
-      setLength1(digit);
-      setLength2('');
-      setOp(null);
-      setChainFrac(null);
-      setResultDisplay('');
-      setPhase('length1');
+      clearAll();
+      setInput(digit);
       return;
     }
-    const setter = phase === 'length1' ? setLength1 : setLength2;
-    setter((prev) => {
+    if (phase === 'operator') {
+      setInput(digit);
+      setPhase('input');
+      return;
+    }
+    setInput((prev) => {
       if (/\d+\/\d+/.test(prev)) return digit;
       return prev + digit;
     });
@@ -230,61 +300,94 @@ export default function TapeCalc() {
     haptic();
     setError(null);
     if (phase === 'result') {
-      setLength1(frac);
-      setLength2('');
-      setOp(null);
-      setChainFrac(null);
-      setResultDisplay('');
-      setPhase('length1');
+      clearAll();
+      setInput(frac);
       return;
     }
-    smartAppendFraction(phase === 'length1' ? setLength1 : setLength2, frac);
+    if (phase === 'operator') {
+      setInput(frac);
+      setPhase('input');
+      return;
+    }
+    appendFraction(frac);
   };
 
   const handleBackspace = () => {
     haptic();
-    if (phase === 'result') return;
-    smartBackspace(phase === 'length1' ? setLength1 : setLength2);
+    if (phase === 'result') { clearAll(); return; }
+    if (phase === 'operator') return;
+    removeLast();
   };
 
   const handleOp = (newOp) => {
     haptic();
     setError(null);
+
     if (phase === 'result') {
-      setLength1(resultDisplay);
-      setLength2('');
-      setOp(newOp);
-      setPhase('length2');
+      setOperandA(resultText);
+      setPendingOp(newOp);
+      setInput('');
+      setPhase('operator');
       return;
     }
-    if (phase === 'length1' && !length1) return;
-    setOp(newOp);
-    if (phase === 'length1') setPhase('length2');
+
+    if (phase === 'operator') {
+      setPendingOp(newOp);
+      return;
+    }
+
+    /* phase === 'input' */
+    if (!input) {
+      if (pendingOp) setPendingOp(newOp);
+      return;
+    }
+
+    if (pendingOp) {
+      /* chain: evaluate pending operation, use result as new operandA */
+      try {
+        const a = chainFrac || parseLength(operandA);
+        const b = parseLength(input);
+        const raw = computeTapeOperation(a, b, pendingOp);
+        const nearest = closestTapeMeasure(raw);
+        setOperandA(nearest.toFraction(true));
+        setChainFrac(nearest);
+      } catch (err) {
+        setError(err.message);
+        setPhase('result');
+        return;
+      }
+    } else {
+      setOperandA(input);
+    }
+
+    setPendingOp(newOp);
+    setInput('');
+    setPhase('operator');
   };
 
   const handleEquals = () => {
     haptic();
-    if (phase !== 'length2' || !length2) return;
+    if (phase !== 'input' || !pendingOp || !input) return;
 
     let a, b;
     try {
-      a = chainFrac || parseLength(length1);
+      a = chainFrac || parseLength(operandA);
     } catch {
       setError('Invalid length');
       setPhase('result');
       return;
     }
     try {
-      b = parseLength(length2);
+      b = parseLength(input);
     } catch {
       setError('Invalid length');
       setPhase('result');
       return;
     }
     try {
-      const raw = computeTapeOperation(a, b, op);
+      const raw = computeTapeOperation(a, b, pendingOp);
       const nearest = closestTapeMeasure(raw);
-      setResultDisplay(nearest.toFraction(true));
+      setResultText(nearest.toFraction(true));
       setChainFrac(nearest);
       setError(null);
     } catch (err) {
@@ -296,189 +399,103 @@ export default function TapeCalc() {
 
   const handleClear = () => {
     haptic();
-    setLength1('');
-    setLength2('');
-    setOp(null);
-    setPhase('length1');
-    setResultDisplay('');
-    setChainFrac(null);
-    setError(null);
+    clearAll();
   };
 
   /* ── render ── */
 
-  const eqDisabled = phase !== 'length2' || !length2;
-  const mainFontSize = mainDisplay.length > 12 ? 24 : mainDisplay.length > 8 ? 30 : 38;
+  const eqDisabled = phase !== 'input' || !pendingOp || !input;
+  const mainLen = mainDisplay.length;
+  const mainFontSize = mainLen > 14 ? '1.4rem' : mainLen > 10 ? '1.8rem' : mainLen > 7 ? '2.2rem' : '2.5rem';
 
   return (
-    <Box
-      sx={{
-        mx: { xs: '-12px', sm: '-16px' },
-        mt: { xs: '-22px', sm: '-32px' },
-        mb: { xs: '-26px', sm: '-36px' },
-        width: 'auto',
-        borderRadius: '14px',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: { xs: 'calc(100vh - 200px)', sm: 'auto' },
-        background: '#1c1c1e',
-      }}
-    >
+    <div className="tc-calc">
       <style>{STYLES}</style>
 
-      {/* ── display area ── */}
-      <div
-        style={{
-          background: '#1a1a1c',
-          padding: '20px 20px 14px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          justifyContent: 'flex-end',
-          minHeight: 90,
-          borderBottom: '1px solid #333',
-        }}
-      >
-        <div
-          data-testid='expression-tape'
-          style={{
-            fontSize: 14,
-            color: '#777',
-            fontFamily: "'Roboto Mono', 'SF Mono', monospace",
-            minHeight: 20,
-            lineHeight: '20px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            width: '100%',
-            textAlign: 'right',
-          }}
-        >
+      {/* ── display ── */}
+      <div className="tc-display">
+        <div className="tc-expr" data-testid="expression-tape">
           {expressionTape}
         </div>
         <div
-          data-testid='display-value'
-          aria-label='result'
-          style={{
-            fontSize: mainFontSize,
-            fontWeight: 700,
-            color: error ? '#e53935' : '#f0f0f0',
-            fontFamily: "'Roboto Mono', 'SF Mono', monospace",
-            lineHeight: 1.2,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            width: '100%',
-            textAlign: 'right',
-            transition: 'font-size 120ms ease',
-            minHeight: 46,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'flex-end',
-          }}
+          className={`tc-main${error && phase === 'result' ? ' tc-main--error' : ''}`}
+          data-testid="display-value"
+          aria-label="result"
+          style={{ fontSize: mainFontSize }}
         >
           {mainDisplay}
         </div>
       </div>
 
-      {/* ── keypad area ── */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-          padding: 6,
-          background: '#2c2c2e',
-        }}
-      >
-        {/* fraction grid — 4x2 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
-          {FRACTIONS.map((frac) => (
-            <button
-              key={frac}
-              className='tc-btn tc-frac'
-              onClick={() => handleFraction(frac)}
-              style={{ height: 38, borderRadius: 6 }}
-            >
-              {frac}
+      {/* ── keypad ── */}
+      <div className="tc-keypad">
+        {/* fraction row 1: 1/16  1/8  1/4  3/8 */}
+        <div className="tc-row4">
+          {FRACTIONS_ROW1.map((f) => (
+            <button key={f} className="tc-btn tc-frac" onClick={() => handleFraction(f)}>
+              {f}
             </button>
           ))}
         </div>
 
-        {/* operator row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+        {/* fraction row 2: 1/2  5/8  3/4  7/8 */}
+        <div className="tc-row4">
+          {FRACTIONS_ROW2.map((f) => (
+            <button key={f} className="tc-btn tc-frac" onClick={() => handleFraction(f)}>
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* operators: ÷  +  −  × */}
+        <div className="tc-row4">
           {OPS.map((key) => (
             <button
               key={key}
-              className='tc-btn tc-op'
+              className="tc-btn tc-op"
               aria-label={key}
-              aria-pressed={op === key}
+              aria-pressed={pendingOp === key}
               onClick={() => handleOp(key)}
-              style={{ height: 46, borderRadius: 8 }}
             >
               {OP_SYMBOLS[key]}
             </button>
           ))}
         </div>
 
-        {/* number pad — fills remaining vertical space */}
-        <div
-          style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gridTemplateRows: 'repeat(4, 1fr)',
-            gap: 4,
-          }}
-        >
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
-            <button
-              key={d}
-              className='tc-btn tc-num'
-              onClick={() => handleDigit(d)}
-              style={{ minHeight: 52, borderRadius: 10 }}
-            >
-              {d}
-            </button>
-          ))}
-          <button
-            className='tc-btn tc-action tc-action-c'
-            aria-label='clear'
-            onClick={handleClear}
-            style={{ minHeight: 52, borderRadius: 10 }}
-          >
+        {/* number rows */}
+        {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, i) => (
+          <div key={i} className="tc-row3">
+            {row.map((d) => (
+              <button key={d} className="tc-btn tc-num" onClick={() => handleDigit(d)}>
+                {d}
+              </button>
+            ))}
+          </div>
+        ))}
+
+        {/* bottom row: C  0  ⌫ */}
+        <div className="tc-row3">
+          <button className="tc-btn tc-action tc-clear" aria-label="clear" onClick={handleClear}>
             C
           </button>
-          <button
-            className='tc-btn tc-num'
-            onClick={() => handleDigit('0')}
-            style={{ minHeight: 52, borderRadius: 10 }}
-          >
+          <button className="tc-btn tc-num" onClick={() => handleDigit('0')}>
             0
           </button>
-          <button
-            className='tc-btn tc-action'
-            aria-label='backspace'
-            onClick={handleBackspace}
-            style={{ minHeight: 52, borderRadius: 10, fontSize: '1.2rem' }}
-          >
+          <button className="tc-btn tc-action" aria-label="backspace" onClick={handleBackspace}>
             {'\u232b'}
           </button>
         </div>
 
-        {/* equals */}
+        {/* equals — full width */}
         <button
-          className='tc-btn tc-eq'
-          aria-label='calculate'
+          className="tc-btn tc-eq"
+          aria-label="calculate"
           onClick={handleEquals}
           disabled={eqDisabled}
-          style={{ minHeight: 52, borderRadius: 10, width: '100%' }}
         >
           =
         </button>
       </div>
-    </Box>
+    </div>
   );
 }
