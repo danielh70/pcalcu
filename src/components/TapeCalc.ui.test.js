@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, createEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TapeCalc from './TapeCalc';
 
@@ -219,5 +219,89 @@ describe('TapeCalc UI', () => {
     await userEvent.click(screen.getByRole('button', { name: '4' }));
     await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
     expect(screen.getByLabelText('result')).toHaveTextContent('7');
+  });
+
+  describe('keyboard input', () => {
+    test('digits, operator, and Enter compute a result', () => {
+      render(<TapeCalc />);
+      fireEvent.keyDown(window, { key: '1' });
+      fireEvent.keyDown(window, { key: '0' });
+      fireEvent.keyDown(window, { key: '+' });
+      fireEvent.keyDown(window, { key: '5' });
+      fireEvent.keyDown(window, { key: 'Enter' });
+      expect(screen.getByLabelText('result')).toHaveTextContent('15');
+    });
+
+    test('= also triggers EQUALS', () => {
+      render(<TapeCalc />);
+      fireEvent.keyDown(window, { key: '8' });
+      fireEvent.keyDown(window, { key: '*' });
+      fireEvent.keyDown(window, { key: '2' });
+      fireEvent.keyDown(window, { key: '=' });
+      expect(screen.getByLabelText('result')).toHaveTextContent('16');
+    });
+
+    test('Backspace removes last digit', () => {
+      render(<TapeCalc />);
+      fireEvent.keyDown(window, { key: '1' });
+      fireEvent.keyDown(window, { key: '2' });
+      fireEvent.keyDown(window, { key: '3' });
+      fireEvent.keyDown(window, { key: 'Backspace' });
+      expect(screen.getByTestId('display-value')).toHaveTextContent('12');
+    });
+
+    test('Escape clears', () => {
+      render(<TapeCalc />);
+      fireEvent.keyDown(window, { key: '4' });
+      fireEvent.keyDown(window, { key: '2' });
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    });
+
+    test('c clears', () => {
+      render(<TapeCalc />);
+      fireEvent.keyDown(window, { key: '9' });
+      fireEvent.keyDown(window, { key: 'c' });
+      expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    });
+
+    test('ignores input when a text field elsewhere is focused', () => {
+      render(
+        <>
+          <input data-testid="other-input" />
+          <TapeCalc />
+        </>
+      );
+      const other = screen.getByTestId('other-input');
+      other.focus();
+      fireEvent.keyDown(other, { key: '5' });
+      expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    });
+
+    test('does not preventDefault on Cmd/Ctrl combos', () => {
+      render(<TapeCalc />);
+      const metaEvt = createEvent.keyDown(window, { key: 'r', metaKey: true });
+      fireEvent(window, metaEvt);
+      expect(metaEvt.defaultPrevented).toBe(false);
+
+      const ctrlEvt = createEvent.keyDown(window, { key: 'f', ctrlKey: true });
+      fireEvent(window, ctrlEvt);
+      expect(ctrlEvt.defaultPrevented).toBe(false);
+    });
+
+    test('preventDefault on / so browser quick-find does not fire', () => {
+      render(<TapeCalc />);
+      const evt = createEvent.keyDown(window, { key: '/' });
+      fireEvent(window, evt);
+      expect(evt.defaultPrevented).toBe(true);
+    });
+
+    test('ignores IME composition events', () => {
+      render(<TapeCalc />);
+      const evt = createEvent.keyDown(window, { key: '1', isComposing: true });
+      fireEvent(window, evt);
+      expect(evt.defaultPrevented).toBe(false);
+      expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    });
   });
 });

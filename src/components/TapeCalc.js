@@ -464,6 +464,35 @@ export default function TapeCalc() {
 
   const run = React.useCallback((action) => { haptic(); dispatch(action); }, []);
 
+  /* ── keyboard input ── */
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (e.ctrlKey || e.metaKey) return;
+      if (e.isComposing) return;
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) {
+        return;
+      }
+      let action = null;
+      const k = e.key;
+      if (k >= '0' && k <= '9') action = { type: ACTIONS.DIGIT, digit: k };
+      else if (k === '+') action = { type: ACTIONS.OP, op: 'add' };
+      else if (k === '-') action = { type: ACTIONS.OP, op: 'subtract' };
+      else if (k === '*') action = { type: ACTIONS.OP, op: 'multiply' };
+      else if (k === '/') action = { type: ACTIONS.OP, op: 'divide' };
+      else if (k === 'Enter' || k === '=') action = { type: ACTIONS.EQUALS };
+      else if (k === 'Backspace') action = { type: ACTIONS.BACKSPACE };
+      else if (k === 'Escape' || k === 'c' || k === 'C') action = { type: ACTIONS.CLEAR };
+      if (action) {
+        e.preventDefault();
+        run(action);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [run]);
+
   /* ── derived display ── */
 
   const mainDisplay = phase === 'result' ? (error || resultText || '0') : (input || '0');
