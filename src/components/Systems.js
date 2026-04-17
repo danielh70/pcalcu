@@ -4,6 +4,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
+import Divider from '@mui/material/Divider';
 import { closestSixteenth, parseLength } from '../utils/measure';
 
 // Backwards-compatible exports (kept for clarity/testing)
@@ -73,50 +74,73 @@ export default function Systems() {
     <Box
       sx={{
         width: '100%',
-        maxWidth: 420,
+        maxWidth: 440,
+        mx: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        gap: 3,
       }}
     >
+      {/* ── section heading ── */}
+      <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+        Spindle Spacing
+      </Typography>
+
+      {/* ── input ── */}
       <TextField
-        id='spindle-length-input'
-        label='Length'
-        variant='outlined'
-        name='length'
+        id="spindle-length-input"
+        label="Length"
+        variant="outlined"
+        name="length"
         value={length}
         onChange={handleLengthChange}
         helperText={error}
         error={!!error}
         fullWidth
-        sx={{ maxWidth: 360, minWidth: 0, flex: 1, mb: 2 }}
+        autoComplete="off"
       />
-      <Stack
-        direction='row'
-        justifyContent='center'
-        alignItems='center'
-        spacing={2}
-        sx={{ width: '100%', mb: 2 }}
-      >
+
+      {/* ── primary action ── */}
+      <Stack spacing={1.25}>
         <Button
           disabled={isGoDisabled}
-          color='primary'
-          variant='contained'
+          color="primary"
+          variant="contained"
+          size="large"
           onClick={calculate}
-          sx={{ minWidth: 90 }}
+          fullWidth
         >
           Go
         </Button>
-        <Button variant='outlined' color='error' onClick={handleClear} sx={{ minWidth: 90 }}>
+        <Button
+          variant="text"
+          color="primary"
+          onClick={handleClear}
+          size="small"
+          sx={{ alignSelf: 'center' }}
+        >
           Reset
         </Button>
       </Stack>
-      <Typography variant='subtitle1' sx={{ fontWeight: 500, color: 'text.secondary', mb: 1 }}>
-        Gap:
-      </Typography>
-      <Typography variant='h5' sx={{ fontWeight: 700, color: 'text.primary', letterSpacing: 0.5 }}>
-        {result || '—'}
-      </Typography>
+
+      <Divider />
+
+      {/* ── result readout ── */}
+      <Stack spacing={1} alignItems="flex-start">
+        <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+          Gap
+        </Typography>
+        <Typography
+          variant="numericLarge"
+          sx={{
+            color: result ? 'primary.main' : 'text.disabled',
+            fontSize: { xs: '2.25rem', sm: '2.75rem' },
+            lineHeight: 1,
+          }}
+        >
+          {result || '—'}
+        </Typography>
+      </Stack>
     </Box>
   );
 }

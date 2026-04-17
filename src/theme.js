@@ -206,6 +206,66 @@ const theme = createTheme({
       },
     },
 
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: 'transparent',
+          borderRadius: 8,
+          transition: 'border-color 120ms ease, background-color 120ms ease',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.divider,
+            transition: 'border-color 120ms ease',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: alpha('#FFFFFF', 0.20),
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.primary.main,
+            borderWidth: 2,
+          },
+          '&.Mui-error .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.error.main,
+          },
+        }),
+        input: ({ theme }) => ({
+          fontFamily: MONO_STACK,
+          fontSize: '1rem',
+          fontWeight: 500,
+          letterSpacing: 0,
+          color: theme.palette.text.primary,
+          padding: '14px 14px',
+          '&::placeholder': {
+            color: theme.palette.text.disabled,
+            opacity: 1,
+          },
+        }),
+      },
+    },
+
+    MuiInputLabel: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          fontFamily: SANS_STACK,
+          fontWeight: 500,
+          color: theme.palette.text.secondary,
+          '&.Mui-focused': { color: theme.palette.primary.main },
+          '&.Mui-error': { color: theme.palette.error.main },
+        }),
+      },
+    },
+
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          fontFamily: SANS_STACK,
+          fontSize: '0.8125rem',
+          marginLeft: 2,
+          color: theme.palette.text.secondary,
+          '&.Mui-error': { color: theme.palette.error.main },
+        }),
+      },
+    },
+
     MuiButton: {
       defaultProps: {
         disableElevation: true,
