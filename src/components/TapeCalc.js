@@ -165,6 +165,7 @@ const STYLES = `
   font-weight: 700;
   color: #f5f5f5;
   font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: 2.5rem;
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
@@ -175,7 +176,8 @@ const STYLES = `
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  transition: font-size 100ms ease;
+  transform-origin: right bottom;
+  transition: transform 120ms ease;
 }
 .tc-main--error { color: #ff3b30; }
 
@@ -689,7 +691,7 @@ export default function TapeCalc() {
 
   const eqDisabled = phase !== 'input' || !pendingOp || !input;
   const mainLen = mainDisplay.length;
-  const mainFontSize = mainLen > 14 ? '1.4rem' : mainLen > 10 ? '1.8rem' : mainLen > 7 ? '2.2rem' : '2.5rem';
+  const mainScale = mainLen > 14 ? 0.56 : mainLen > 10 ? 0.72 : mainLen > 7 ? 0.88 : 1;
 
   return (
     <div className="tc-calc">
@@ -742,7 +744,10 @@ export default function TapeCalc() {
           role={canCycleUnit ? 'button' : undefined}
           tabIndex={canCycleUnit ? 0 : undefined}
           onClick={cycleUnit}
-          style={{ fontSize: mainFontSize, cursor: canCycleUnit ? 'pointer' : 'default' }}
+          style={{
+            transform: `scale(${mainScale})`,
+            cursor: canCycleUnit ? 'pointer' : 'default',
+          }}
         >
           {mainDisplay}
         </div>
