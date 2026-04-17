@@ -281,18 +281,188 @@ const STYLES = `
 `;
 
 /* ═══════════════════════════════════════════════════════════════
-   Component — state machine: input → operator → input → result
+   Reducer — actions, initial state, state machine
+   ═══════════════════════════════════════════════════════════════ */
+
+export const ACTIONS = Object.freeze({
+  DIGIT: 'DIGIT',
+  FRAC: 'FRAC',
+  OP: 'OP',
+  EQUALS: 'EQUALS',
+  BACKSPACE: 'BACKSPACE',
+  CLEAR: 'CLEAR',
+  OPEN_FRAC: 'OPEN_FRAC',
+  CLOSE_FRAC: 'CLOSE_FRAC',
+  RECALL: 'RECALL',
+});
+
+const initialState = {
+  input: '',
+  operandA: '',
+  pendingOp: null,
+  phase: 'input',
+  resultText: '',
+  chainFrac: null,
+  error: null,
+  showFracPanel: false,
+};
+
+// Reset calc state while preserving UI-only bits (showFracPanel).
+const cleared = (state) => ({
+  ...state,
+  input: '',
+  operandA: '',
+  pendingOp: null,
+  phase: 'input',
+  resultText: '',
+  chainFrac: null,
+  error: null,
+});
+
+export function reducer(state, action) {
+  switch (action.type) {
+    case ACTIONS.DIGIT: {
+      if (state.phase === 'result') {
+        return { ...cleared(state), input: action.digit };
+      }
+      if (state.phase === 'operator') {
+        return { ...state, error: null, input: action.digit, phase: 'input' };
+      }
+      const newInput = /\d+\/\d+/.test(state.input) ? action.digit : state.input + action.digit;
+      return { ...state, error: null, input: newInput };
+    }
+
+    case ACTIONS.FRAC: {
+      if (state.phase === 'result') {
+        return { ...cleared(state), input: action.frac };
+      }
+      if (state.phase === 'operator') {
+        return { ...state, error: null, input: action.frac, phase: 'input' };
+      }
+      const t = state.input.trim();
+      let newInput;
+      if (!t) newInput = action.frac;
+      else if (/^\d+\/\d+$/.test(t)) newInput = action.frac;
+      else newInput = t.replace(/\s+\d+\/\d+$/, '') + ' ' + action.frac;
+      return { ...state, error: null, input: newInput };
+    }
+
+    case ACTIONS.OP: {
+      if (state.phase === 'result') {
+        if (state.error) return cleared(state);
+        return {
+          ...state,
+          error: null,
+          operandA: state.resultText,
+          pendingOp: action.op,
+          input: '',
+          phase: 'operator',
+        };
+      }
+      if (state.phase === 'operator') {
+        return { ...state, error: null, pendingOp: action.op };
+      }
+      // phase === 'input'
+      if (!state.input) {
+        if (state.pendingOp) return { ...state, error: null, pendingOp: action.op };
+        return { ...state, error: null };
+      }
+      if (state.pendingOp) {
+        try {
+          const a = state.chainFrac || parseLength(state.operandA);
+          const b = parseLength(state.input);
+          const raw = computeTapeOperation(a, b, state.pendingOp);
+          const nearest = closestTapeMeasure(raw);
+          return {
+            ...state,
+            error: null,
+            operandA: nearest.toFraction(true),
+            chainFrac: nearest,
+            pendingOp: action.op,
+            input: '',
+            phase: 'operator',
+          };
+        } catch (err) {
+          return { ...state, error: err.message, phase: 'result' };
+        }
+      }
+      return {
+        ...state,
+        error: null,
+        operandA: state.input,
+        pendingOp: action.op,
+        input: '',
+        phase: 'operator',
+      };
+    }
+
+    case ACTIONS.EQUALS: {
+      if (state.phase !== 'input' || !state.pendingOp || !state.input) return state;
+      let a, b;
+      try {
+        a = state.chainFrac || parseLength(state.operandA);
+      } catch {
+        return { ...state, error: 'Invalid length', phase: 'result' };
+      }
+      try {
+        b = parseLength(state.input);
+      } catch {
+        return { ...state, error: 'Invalid length', phase: 'result' };
+      }
+      try {
+        const raw = computeTapeOperation(a, b, state.pendingOp);
+        const nearest = closestTapeMeasure(raw);
+        return {
+          ...state,
+          resultText: nearest.toFraction(true),
+          chainFrac: nearest,
+          error: null,
+          phase: 'result',
+        };
+      } catch (err) {
+        return { ...state, error: err.message, chainFrac: null, phase: 'result' };
+      }
+    }
+
+    case ACTIONS.BACKSPACE: {
+      if (state.phase === 'result') return cleared(state);
+      if (state.phase === 'operator') return state;
+      const prev = state.input;
+      if (!prev) return state;
+      const m = prev.match(/\s+\d+\/\d+$/);
+      if (m) return { ...state, input: prev.slice(0, -m[0].length) };
+      if (/^\d+\/\d+$/.test(prev)) return { ...state, input: '' };
+      return { ...state, input: prev.slice(0, -1) };
+    }
+
+    case ACTIONS.CLEAR:
+      return cleared(state);
+
+    case ACTIONS.OPEN_FRAC:
+      return { ...state, showFracPanel: true };
+
+    case ACTIONS.CLOSE_FRAC:
+      return { ...state, showFracPanel: false };
+
+    // RECALL loads a prior result as the current input, ready to combine
+    // with an operator. (Phase 3.10 wires this to the history UI.)
+    case ACTIONS.RECALL:
+      return { ...cleared(state), input: action.display };
+
+    default:
+      return state;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Component — thin wrapper over reducer; haptic side-effect lives here
    ═══════════════════════════════════════════════════════════════ */
 
 export default function TapeCalc() {
-  const [input, setInput] = React.useState('');
-  const [operandA, setOperandA] = React.useState('');
-  const [pendingOp, setPendingOp] = React.useState(null);
-  const [phase, setPhase] = React.useState('input');
-  const [resultText, setResultText] = React.useState('');
-  const [chainFrac, setChainFrac] = React.useState(null);
-  const [error, setError] = React.useState(null);
-  const [showFracPanel, setShowFracPanel] = React.useState(false);
+  const [state, dispatch] = React.useReducer(reducer, initialState);
+  const { input, operandA, pendingOp, phase, resultText, error, showFracPanel } = state;
+
+  const run = React.useCallback((action) => { haptic(); dispatch(action); }, []);
 
   /* ── derived display ── */
 
@@ -304,176 +474,6 @@ export default function TapeCalc() {
     if (phase === 'result') return `${operandA || '0'} ${sym} ${input || '0'} =`;
     return `${operandA || '0'} ${sym}`;
   })();
-
-  /* ── input helpers ── */
-
-  const appendFraction = (frac) => {
-    setInput((prev) => {
-      const t = prev.trim();
-      if (!t) return frac;
-      if (/^\d+\/\d+$/.test(t)) return frac;
-      return t.replace(/\s+\d+\/\d+$/, '') + ' ' + frac;
-    });
-  };
-
-  const removeLast = () => {
-    setInput((prev) => {
-      if (!prev) return prev;
-      const m = prev.match(/\s+\d+\/\d+$/);
-      if (m) return prev.slice(0, -m[0].length);
-      if (/^\d+\/\d+$/.test(prev)) return '';
-      return prev.slice(0, -1);
-    });
-  };
-
-  const clearAll = () => {
-    setInput('');
-    setOperandA('');
-    setPendingOp(null);
-    setPhase('input');
-    setResultText('');
-    setChainFrac(null);
-    setError(null);
-  };
-
-  /* ── handlers ── */
-
-  const handleDigit = (digit) => {
-    haptic();
-    setError(null);
-    if (phase === 'result') {
-      clearAll();
-      setInput(digit);
-      return;
-    }
-    if (phase === 'operator') {
-      setInput(digit);
-      setPhase('input');
-      return;
-    }
-    setInput((prev) => {
-      if (/\d+\/\d+/.test(prev)) return digit;
-      return prev + digit;
-    });
-  };
-
-  const handleFraction = (frac) => {
-    haptic();
-    setError(null);
-    if (phase === 'result') {
-      clearAll();
-      setInput(frac);
-      return;
-    }
-    if (phase === 'operator') {
-      setInput(frac);
-      setPhase('input');
-      return;
-    }
-    appendFraction(frac);
-  };
-
-  const handleFracSelect = (frac) => {
-    handleFraction(frac);
-    setShowFracPanel(false);
-  };
-
-  const handleBackspace = () => {
-    haptic();
-    if (phase === 'result') { clearAll(); return; }
-    if (phase === 'operator') return;
-    removeLast();
-  };
-
-  const handleOp = (newOp) => {
-    haptic();
-
-    if (phase === 'result') {
-      if (error) {
-        clearAll();
-        return;
-      }
-      setError(null);
-      setOperandA(resultText);
-      setPendingOp(newOp);
-      setInput('');
-      setPhase('operator');
-      return;
-    }
-
-    setError(null);
-
-    if (phase === 'operator') {
-      setPendingOp(newOp);
-      return;
-    }
-
-    /* phase === 'input' */
-    if (!input) {
-      if (pendingOp) setPendingOp(newOp);
-      return;
-    }
-
-    if (pendingOp) {
-      try {
-        const a = chainFrac || parseLength(operandA);
-        const b = parseLength(input);
-        const raw = computeTapeOperation(a, b, pendingOp);
-        const nearest = closestTapeMeasure(raw);
-        setOperandA(nearest.toFraction(true));
-        setChainFrac(nearest);
-      } catch (err) {
-        setError(err.message);
-        setPhase('result');
-        return;
-      }
-    } else {
-      setOperandA(input);
-    }
-
-    setPendingOp(newOp);
-    setInput('');
-    setPhase('operator');
-  };
-
-  const handleEquals = () => {
-    haptic();
-    if (phase !== 'input' || !pendingOp || !input) return;
-
-    let a, b;
-    try {
-      a = chainFrac || parseLength(operandA);
-    } catch {
-      setError('Invalid length');
-      setPhase('result');
-      return;
-    }
-    try {
-      b = parseLength(input);
-    } catch {
-      setError('Invalid length');
-      setPhase('result');
-      return;
-    }
-    try {
-      const raw = computeTapeOperation(a, b, pendingOp);
-      const nearest = closestTapeMeasure(raw);
-      setResultText(nearest.toFraction(true));
-      setChainFrac(nearest);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      setChainFrac(null);
-    }
-    setPhase('result');
-  };
-
-  const handleClear = () => {
-    haptic();
-    clearAll();
-  };
-
-  /* ── render ── */
 
   const eqDisabled = phase !== 'input' || !pendingOp || !input;
   const mainLen = mainDisplay.length;
@@ -511,7 +511,7 @@ export default function TapeCalc() {
                 className="tc-btn tc-op"
                 aria-label={key}
                 aria-pressed={pendingOp === key}
-                onClick={() => handleOp(key)}
+                onClick={() => run({ type: ACTIONS.OP, op: key })}
               >
                 {OP_SYMBOLS[key]}
               </button>
@@ -522,7 +522,11 @@ export default function TapeCalc() {
           {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, i) => (
             <div key={i} className="tc-row3">
               {row.map((d) => (
-                <button key={d} className="tc-btn tc-num" onClick={() => handleDigit(d)}>
+                <button
+                  key={d}
+                  className="tc-btn tc-num"
+                  onClick={() => run({ type: ACTIONS.DIGIT, digit: d })}
+                >
                   {d}
                 </button>
               ))}
@@ -531,20 +535,31 @@ export default function TapeCalc() {
 
           {/* bottom row: C, 0, FRAC, ⌫ */}
           <div className="tc-row4">
-            <button className="tc-btn tc-action tc-clear" aria-label="clear" onClick={handleClear}>
+            <button
+              className="tc-btn tc-action tc-clear"
+              aria-label="clear"
+              onClick={() => run({ type: ACTIONS.CLEAR })}
+            >
               C
             </button>
-            <button className="tc-btn tc-num" onClick={() => handleDigit('0')}>
+            <button
+              className="tc-btn tc-num"
+              onClick={() => run({ type: ACTIONS.DIGIT, digit: '0' })}
+            >
               0
             </button>
             <button
               className="tc-btn tc-frac-btn"
               aria-label="fractions"
-              onClick={() => { haptic(); setShowFracPanel(true); }}
+              onClick={() => run({ type: ACTIONS.OPEN_FRAC })}
             >
               FRAC
             </button>
-            <button className="tc-btn tc-action" aria-label="backspace" onClick={handleBackspace}>
+            <button
+              className="tc-btn tc-action"
+              aria-label="backspace"
+              onClick={() => run({ type: ACTIONS.BACKSPACE })}
+            >
               {'\u232b'}
             </button>
           </div>
@@ -553,7 +568,7 @@ export default function TapeCalc() {
           <button
             className="tc-btn tc-eq"
             aria-label="calculate"
-            onClick={handleEquals}
+            onClick={() => run({ type: ACTIONS.EQUALS })}
             disabled={eqDisabled}
           >
             =
@@ -563,14 +578,22 @@ export default function TapeCalc() {
         {/* ── fraction selection panel (overlay) ── */}
         <div className={`tc-frac-panel${showFracPanel ? '' : ' tc-frac-panel--hidden'}`}>
           {FRAC_GRID.map((f) => (
-            <button key={f} className="tc-btn tc-frac" onClick={() => handleFracSelect(f)}>
+            <button
+              key={f}
+              className="tc-btn tc-frac"
+              onClick={() => {
+                haptic();
+                dispatch({ type: ACTIONS.FRAC, frac: f });
+                dispatch({ type: ACTIONS.CLOSE_FRAC });
+              }}
+            >
               {f}
             </button>
           ))}
           <button
             className="tc-btn tc-frac-close"
             aria-label="close fractions"
-            onClick={() => { haptic(); setShowFracPanel(false); }}
+            onClick={() => run({ type: ACTIONS.CLOSE_FRAC })}
           >
             {'\u2715'}
           </button>
