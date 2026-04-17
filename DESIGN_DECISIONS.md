@@ -36,3 +36,17 @@ One line per decision. Running log in execution order.
 - **Divider above the readout**: thin `divider` line to split input/action from output. Cheaper than nesting a second Paper and reads clearly.
 - **Helper text**: preserved exactly — empty when valid, error message when invalid. No added placeholder copy; that would have been a content change dressed as a visual one.
 - **Kept as-is**: `id='spindle-length-input'`, `name='length'`, `label='Length'`, button labels `Go` / `Reset`, result rendered as plain text; all computation, state, and handlers unchanged.
+- **Bug I introduced and fixed**: changed the "Gap:" label to "Gap" mid-edit — broke `App.test.js` which asserts `/gap:/i`. Restored the colon; test back to green. Lesson: "preserve every label" includes punctuation.
+
+## Task D — Panel tab (interpreted as PostLevel.js)
+
+- **Ambiguity call**: user said `Panel.js`, no such file exists. Only candidate is `PostLevel.js` — commented out of `App.js`. Treated as Panel; did NOT re-enable in App (would be a routing change beyond visual scope). If wrong target, ping and I'll rework.
+- **Diagram palette**: replaced hard-coded `#2e7d32` / `#424242` / `#bdbdbd` with `primary.main` / `text.secondary` / `divider`. Orange now marks the base/reference post — consistent with "orange = the answer" elsewhere in the app.
+- **Diagram dot grid**: inverted from `rgba(0,0,0,0.07)` dots on light grey to `rgba(255,255,255,0.06)` dots on `background.default`. Same density, reads as engineering paper rather than a CAD printout.
+- **Table header**: moved from `grey.100` to `secondary.main` (#2E2E2E) — solid industrial band, not a washed tint. Zebra rows at white@2.5% so striping is felt, not seen.
+- **Cut-list "Cut At" column**: styled in `primary.main` bold. The reading and extra columns are neutral; the cut length is the thing the carpenter actually wants — payoff column gets the colour.
+- **Post label style**: flipped from sentence-case body text to uppercase overline-ish caption (0.75rem, letter-spaced, `text.secondary`) to match the rest of the new type system.
+- **Action hierarchy**: Go = contained-primary size-large full-width, Reset = small text button below — matching Systems exactly. Upload Photo / Add Post = outlined-primary pair, full-width on mobile, side-by-side on sm+.
+- **Remove-row IconButton**: now shows `error.main` only on hover (muted `text.secondary` at rest) — destructive affordance without visual noise at idle.
+- **Target height inputs**: kept side-by-side at 110px each (slight bump from 90 for Roboto Mono legibility); number inputs inherit mono font from the global MuiOutlinedInput override.
+- **Pin number font**: switched to Roboto Mono — "1" / "2" / "3" on circles are numerics and should match the readout typography.

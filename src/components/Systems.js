@@ -128,7 +128,7 @@ export default function Systems() {
       {/* ── result readout ── */}
       <Stack spacing={1} alignItems="flex-start">
         <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-          Gap
+          Gap:
         </Typography>
         <Typography
           variant="numericLarge"

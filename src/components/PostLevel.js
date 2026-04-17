@@ -17,15 +17,11 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 import Fraction from 'fraction.js';
 import { parseLength, closestSixteenth } from '../utils/measure';
-
-const BASE_COLOR = '#2e7d32';
-const POST_COLOR = '#424242';
-const LINE_COLOR = '#bdbdbd';
 
 export default function PostLevel() {
   const [targetFeet, setTargetFeet] = React.useState(9);
@@ -46,6 +42,11 @@ export default function PostLevel() {
   const pinSize = isSmall ? 36 : 48;
   const connW = isSmall ? 16 : 24;
   const connH = isSmall ? 12 : 20;
+
+  // Diagram colour tokens — resolved from theme so they track the brand palette
+  const BASE_COLOR = theme.palette.primary.main;       // orange on the base/reference post
+  const POST_COLOR = theme.palette.text.secondary;     // muted grey for non-base posts
+  const LINE_COLOR = theme.palette.divider;            // hairline white@8% for connectors
 
   const targetHeight = targetFeet * 12 + targetInches;
 
@@ -214,14 +215,16 @@ export default function PostLevel() {
   }, [sourceGrid, results]);
 
   const cellSx = {
-    py: { xs: 0.5, sm: 1 },
+    py: { xs: 0.75, sm: 1 },
     px: { xs: 1, sm: 2 },
-    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+    fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+    borderBottomColor: 'divider',
   };
 
   const numCellSx = {
     ...cellSx,
     textAlign: 'right',
+    fontFamily: theme.typography.fontFamilyMonospace,
     fontVariantNumeric: 'tabular-nums',
   };
 
@@ -229,116 +232,153 @@ export default function PostLevel() {
     <Box
       sx={{
         width: '100%',
-        maxWidth: 520,
+        maxWidth: 540,
+        mx: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        gap: 3,
       }}
     >
-      <Typography
-        variant='subtitle1'
-        sx={{ fontWeight: 500, color: 'text.secondary', mb: 2 }}
-      >
-        Target Post Height
+      {/* ── section heading ── */}
+      <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+        Post Level
       </Typography>
 
-      <Stack direction='row' spacing={2} alignItems='center' sx={{ mb: 3 }}>
-        <TextField
-          label='Feet'
-          type='number'
-          value={targetFeet}
-          onChange={(e) => {
-            setTargetFeet(Number(e.target.value) || 0);
-            setResults(null);
-          }}
-          sx={{ width: 90 }}
-          inputProps={{ min: 0 }}
-        />
-        <TextField
-          label='Inches'
-          type='number'
-          value={targetInches}
-          onChange={(e) => {
-            setTargetInches(Number(e.target.value) || 0);
-            setResults(null);
-          }}
-          sx={{ width: 90 }}
-          inputProps={{ min: 0, max: 11 }}
-        />
+      {/* ── target height ── */}
+      <Stack spacing={1}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+          Target post height
+        </Typography>
+        <Stack direction="row" spacing={1.5}>
+          <TextField
+            label="Feet"
+            type="number"
+            value={targetFeet}
+            onChange={(e) => {
+              setTargetFeet(Number(e.target.value) || 0);
+              setResults(null);
+            }}
+            sx={{ width: 110 }}
+            inputProps={{ min: 0 }}
+          />
+          <TextField
+            label="Inches"
+            type="number"
+            value={targetInches}
+            onChange={(e) => {
+              setTargetInches(Number(e.target.value) || 0);
+              setResults(null);
+            }}
+            sx={{ width: 110 }}
+            inputProps={{ min: 0, max: 11 }}
+          />
+        </Stack>
       </Stack>
 
-      <Stack direction='row' spacing={2} sx={{ mb: 2 }}>
+      {/* ── source actions ── */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
         <Button
-          variant='outlined'
+          variant="outlined"
+          color="primary"
           startIcon={
-            photoLoading ? <CircularProgress size={18} /> : <CloudUploadIcon />
+            photoLoading ? <CircularProgress size={18} color="inherit" /> : <CloudUploadIcon />
           }
           onClick={() => fileInputRef.current?.click()}
           disabled={photoLoading}
+          fullWidth
         >
           Upload Photo
         </Button>
         <input
           ref={fileInputRef}
-          type='file'
-          accept='image/*'
+          type="file"
+          accept="image/*"
           hidden
           onChange={handlePhotoUpload}
         />
-        <Button variant='outlined' startIcon={<AddIcon />} onClick={addRow}>
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={addRow}
+          fullWidth
+        >
           Add Post
         </Button>
       </Stack>
 
-      {measurements.map((m, i) => (
-        <Stack
-          key={i}
-          direction='row'
-          spacing={1}
-          alignItems='center'
-          sx={{ mb: 1, width: '100%', maxWidth: 360 }}
-        >
-          <Typography sx={{ minWidth: 56, fontWeight: 500, fontSize: '0.875rem' }}>
-            {m.label}
-          </Typography>
-          <TextField
-            size='small'
-
-            value={m.inches}
-            onChange={(e) => updateReading(i, e.target.value)}
-            fullWidth
-          />
-          <IconButton
-            size='small'
-            onClick={() => removeRow(i)}
-            disabled={measurements.length <= 1}
+      {/* ── post readings ── */}
+      <Stack spacing={1.25}>
+        {measurements.map((m, i) => (
+          <Stack
+            key={i}
+            direction="row"
+            spacing={1.25}
+            alignItems="center"
+            sx={{ width: '100%' }}
           >
-            <RemoveIcon fontSize='small' />
-          </IconButton>
-        </Stack>
-      ))}
+            <Typography
+              variant="body2"
+              sx={{
+                minWidth: 64,
+                fontWeight: 600,
+                color: 'text.secondary',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                fontSize: '0.75rem',
+              }}
+            >
+              {m.label}
+            </Typography>
+            <TextField
+              size="small"
+              value={m.inches}
+              onChange={(e) => updateReading(i, e.target.value)}
+              placeholder='0'
+              fullWidth
+            />
+            <IconButton
+              size="small"
+              onClick={() => removeRow(i)}
+              disabled={measurements.length <= 1}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { color: 'error.main', backgroundColor: alpha(theme.palette.error.main, 0.08) },
+              }}
+            >
+              <RemoveIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        ))}
+      </Stack>
 
       {error && (
-        <Typography color='error' sx={{ mt: 1, mb: 1, fontSize: '0.875rem' }}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'error.main', fontWeight: 500 }}
+        >
           {error}
         </Typography>
       )}
 
-      <Stack direction='row' spacing={2} sx={{ mt: 2, mb: 2 }}>
+      {/* ── primary action ── */}
+      <Stack spacing={1.25}>
         <Button
-          variant='contained'
-          color='primary'
+          variant="contained"
+          color="primary"
+          size="large"
           onClick={calculate}
           disabled={!allFilled}
-          sx={{ minWidth: 90 }}
+          fullWidth
         >
           Go
         </Button>
         <Button
-          variant='outlined'
-          color='error'
+          variant="text"
+          color="primary"
           onClick={handleClear}
-          sx={{ minWidth: 90 }}
+          size="small"
+          sx={{ alignSelf: 'center' }}
         >
           Reset
         </Button>
@@ -346,27 +386,25 @@ export default function PostLevel() {
 
       {results && (
         <>
-          <Divider sx={{ width: '100%', my: 2 }} />
+          <Divider />
 
+          {/* ── results table ── */}
           <Box ref={resultsRef} sx={{ width: '100%', scrollMarginTop: 16 }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+              Cut List
+            </Typography>
             <TableContainer
               component={Paper}
-              variant='outlined'
+              variant="outlined"
               sx={{ borderRadius: 2, overflow: 'hidden' }}
             >
-              <Table size='small'>
+              <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.100' }}>
-                    <TableCell sx={{ ...cellSx, fontWeight: 700 }}>Post</TableCell>
-                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>
-                      Reading
-                    </TableCell>
-                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>
-                      Extra
-                    </TableCell>
-                    <TableCell sx={{ ...numCellSx, fontWeight: 700 }}>
-                      Cut At
-                    </TableCell>
+                  <TableRow sx={{ bgcolor: 'secondary.main' }}>
+                    <TableCell sx={{ ...cellSx, fontWeight: 700, color: 'text.primary' }}>Post</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700, color: 'text.primary' }}>Reading</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700, color: 'text.primary' }}>Extra</TableCell>
+                    <TableCell sx={{ ...numCellSx, fontWeight: 700, color: 'text.primary' }}>Cut At</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -375,27 +413,33 @@ export default function PostLevel() {
                       key={i}
                       sx={{
                         bgcolor: row.isBase
-                          ? 'rgba(46, 125, 50, 0.08)'
+                          ? alpha(theme.palette.primary.main, 0.10)
                           : i % 2 === 1
-                            ? 'grey.50'
+                            ? alpha('#FFFFFF', 0.025)
                             : 'transparent',
                         '&:last-child td': { borderBottom: 0 },
                       }}
                     >
-                      <TableCell sx={cellSx}>{row.label}</TableCell>
+                      <TableCell sx={{ ...cellSx, fontWeight: 600 }}>{row.label}</TableCell>
                       <TableCell sx={numCellSx}>{row.reading}</TableCell>
                       <TableCell
                         sx={{
                           ...numCellSx,
                           ...(row.isBase && {
-                            color: 'success.dark',
-                            fontWeight: 600,
+                            color: 'primary.main',
+                            fontWeight: 700,
                           }),
                         }}
                       >
                         {row.isBase ? 'base' : row.extra}
                       </TableCell>
-                      <TableCell sx={{ ...numCellSx, fontWeight: 600 }}>
+                      <TableCell
+                        sx={{
+                          ...numCellSx,
+                          fontWeight: 700,
+                          color: 'primary.main',
+                        }}
+                      >
                         {row.cutAt}
                       </TableCell>
                     </TableRow>
@@ -405,26 +449,27 @@ export default function PostLevel() {
             </TableContainer>
           </Box>
 
+          {/* ── site layout diagram ── */}
           {diagramData && (
             <Box
               sx={{
-                mt: 3,
                 width: '100%',
-                bgcolor: 'grey.50',
+                bgcolor: 'background.default',
+                border: `1px solid ${theme.palette.divider}`,
                 borderRadius: 2,
                 p: { xs: 1.5, sm: 2.5 },
                 backgroundImage:
-                  'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                  'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
                 backgroundSize: '12px 12px',
               }}
             >
               <Typography
-                variant='subtitle2'
+                variant="overline"
                 sx={{
                   mb: 2,
-                  fontWeight: 600,
                   color: 'text.secondary',
                   textAlign: 'center',
+                  display: 'block',
                 }}
               >
                 Site Layout
@@ -472,7 +517,9 @@ export default function PostLevel() {
                               borderRadius: '50%',
                               border: '2.5px solid',
                               borderColor: accent,
-                              bgcolor: isBase ? 'rgba(46,125,50,0.1)' : '#fff',
+                              bgcolor: isBase
+                                ? alpha(theme.palette.primary.main, 0.15)
+                                : 'background.paper',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -485,6 +532,7 @@ export default function PostLevel() {
                                 fontSize: pinSize > 40 ? '0.85rem' : '0.7rem',
                                 color: accent,
                                 lineHeight: 1,
+                                fontFamily: theme.typography.fontFamilyMonospace,
                               }}
                             >
                               {cell.idx + 1}
@@ -492,12 +540,13 @@ export default function PostLevel() {
                           </Box>
                           <Typography
                             sx={{
-                              fontWeight: 700,
+                              fontWeight: 600,
                               fontSize: pinSize > 40 ? '0.65rem' : '0.55rem',
                               color: 'text.primary',
                               mt: 0.25,
                               lineHeight: 1.2,
                               whiteSpace: 'nowrap',
+                              fontFamily: theme.typography.fontFamilyMonospace,
                             }}
                           >
                             {cell.result.cutAt}
