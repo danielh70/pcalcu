@@ -219,18 +219,18 @@
 /* ── operator buttons ── */
 .tc-op {
   background: #505055;
-  color: #f5a623;
+  color: #F57C00;
   font-size: 1.25rem;
   font-weight: 700;
   min-height: 54px;
 }
 .tc-op:active { background: #3a3a3e; }
 .tc-op[aria-pressed="true"] {
-  background: #f5a623;
+  background: #F57C00;
   color: #fff;
 }
 .tc-op[aria-pressed="true"]:active {
-  background: #d4891a;
+  background: #D96C00;
 }
 
 /* ── action buttons (C / backspace) ── */

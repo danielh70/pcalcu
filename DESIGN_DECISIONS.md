@@ -50,3 +50,7 @@ One line per decision. Running log in execution order.
 - **Remove-row IconButton**: now shows `error.main` only on hover (muted `text.secondary` at rest) — destructive affordance without visual noise at idle.
 - **Target height inputs**: kept side-by-side at 110px each (slight bump from 90 for Roboto Mono legibility); number inputs inherit mono font from the global MuiOutlinedInput override.
 - **Pin number font**: switched to Roboto Mono — "1" / "2" / "3" on circles are numerics and should match the readout typography.
+
+## Task E — TapeCalc orange alignment
+
+- **Two colour swaps** in `TapeCalc.css`: `#f5a623` → `#F57C00` (operator text + pressed background), `#d4891a` → `#D96C00` (pressed-active darker state). Preserves the same light/dark relationship; nothing else in TapeCalc touched.
