@@ -1,108 +1,227 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, alpha } from '@mui/material/styles';
+
+/* ═══════════════════════════════════════════════════════════════
+   Brand palette — premium-tool orange on warm near-black.
+   Secondary #2E2E2E (20 units above paper #1A1A1A) for real
+   surface separation on OLED. Error red is intentionally cool so
+   it reads as distinct from primary orange.
+   ═══════════════════════════════════════════════════════════════ */
+
+const BRAND_ORANGE = '#F57C00';
+const BRAND_ORANGE_HOVER = '#FF8F1F';
+const BRAND_ORANGE_ACTIVE = '#D96C00';
+
+const MONO_STACK = `'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace`;
+const SANS_STACK = `'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif`;
+
+const palette = {
+  mode: 'dark',
+  primary: {
+    main: BRAND_ORANGE,
+    light: BRAND_ORANGE_HOVER,
+    dark: BRAND_ORANGE_ACTIVE,
+    contrastText: '#0E0E0F',
+  },
+  secondary: {
+    main: '#2E2E2E',
+    light: '#3F3F3F',
+    dark: '#1F1F1F',
+    contrastText: '#F5F5F5',
+  },
+  background: {
+    default: '#0E0E0F',
+    paper: '#1A1A1A',
+  },
+  text: {
+    primary: '#F5F5F5',
+    secondary: '#A8A8A8',
+    disabled: '#595959',
+  },
+  divider: 'rgba(255,255,255,0.08)',
+  error: {
+    main: '#E53935',
+    light: '#EF5350',
+    dark: '#C62828',
+    contrastText: '#FFFFFF',
+  },
+  warning: {
+    main: '#FFB300',
+    contrastText: '#0E0E0F',
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   Typography — Inter sans / Roboto Mono numeric.
+   Custom numeric* variants are registered under
+   components.MuiTypography.variants so <Typography variant="numeric">
+   resolves at runtime without TS augmentation.
+   ═══════════════════════════════════════════════════════════════ */
+
+const typography = {
+  fontFamily: SANS_STACK,
+  fontFamilyMonospace: MONO_STACK,
+  fontWeightRegular: 400,
+  fontWeightMedium: 500,
+  fontWeightSemiBold: 600,
+  fontWeightBold: 700,
+
+  h1: { fontSize: '2.25rem',   fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em' },
+  h2: { fontSize: '1.75rem',   fontWeight: 700, lineHeight: 1.20, letterSpacing: '-0.015em' },
+  h3: { fontSize: '1.375rem',  fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.01em' },
+  h4: { fontSize: '1.1875rem', fontWeight: 600, lineHeight: 1.30 },
+  h5: { fontSize: '1.0625rem', fontWeight: 600, lineHeight: 1.35 },
+  h6: { fontSize: '0.9375rem', fontWeight: 600, lineHeight: 1.40, letterSpacing: '0.01em' },
+
+  body1:    { fontSize: '1rem',      fontWeight: 400, lineHeight: 1.5 },
+  body2:    { fontSize: '0.875rem',  fontWeight: 400, lineHeight: 1.5, letterSpacing: '0.01em' },
+  button:   { fontSize: '0.9375rem', fontWeight: 600, letterSpacing: 0, textTransform: 'none' },
+  caption:  { fontSize: '0.75rem',   fontWeight: 500, lineHeight: 1.4, letterSpacing: '0.03em' },
+  overline: { fontSize: '0.6875rem', fontWeight: 700, lineHeight: 1.4, letterSpacing: '0.10em', textTransform: 'uppercase' },
+};
+
+const shape = { borderRadius: 8 };
+
+/* ═══════════════════════════════════════════════════════════════
+   Component overrides — Button only in this pass.
+   Tabs, Tab, AppBar, Paper, TextField, ToggleButton land in B/C.
+   Disabled-state colours are decoupled from primary so orange
+   never dims into unreadable brown on dark.
+   ═══════════════════════════════════════════════════════════════ */
 
 const theme = createTheme({
-  shape: { borderRadius: 6 },
-  palette: {
-    background: { default: '#e8e9ed', paper: '#ffffff' },
-    primary: {
-      main: '#1976d2',
-      dark: '#115293',
-      contrastText: '#fff',
-    },
-    text: { primary: 'rgba(12, 22, 30, 0.95)', secondary: 'rgba(12,22,30,0.6)' },
-  },
+  palette,
+  typography,
+  shape,
   components: {
-    MuiTabs: {
+    MuiCssBaseline: {
       styleOverrides: {
-        root: {
-          borderRadius: 0,
-          backgroundColor: 'rgba(255,255,255,0.97)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: 'none',
-          overflow: 'hidden',
-        },
-        indicator: {
-          height: 3,
-          borderRadius: 3,
+        body: {
+          backgroundColor: palette.background.default,
+          color: palette.text.primary,
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
         },
       },
     },
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          fontWeight: 650,
-          minHeight: 48,
-          paddingTop: 12,
-          paddingBottom: 12,
+
+    MuiTypography: {
+      variants: [
+        {
+          props: { variant: 'numericLarge' },
+          style: { fontFamily: MONO_STACK, fontSize: '2rem', fontWeight: 500, lineHeight: 1.0, letterSpacing: 0 },
         },
-      },
+        {
+          props: { variant: 'numeric' },
+          style: { fontFamily: MONO_STACK, fontSize: '1rem', fontWeight: 500, lineHeight: 1.4, letterSpacing: 0 },
+        },
+        {
+          props: { variant: 'numericSmall' },
+          style: { fontFamily: MONO_STACK, fontSize: '0.8125rem', fontWeight: 500, lineHeight: 1.4, letterSpacing: 0 },
+        },
+      ],
     },
+
     MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 6,
-          textTransform: 'none',
-          fontWeight: 600,
-          padding: '8px 14px',
-        },
-        containedPrimary: {
-          boxShadow: '0 6px 18px rgba(2,6,23,0.05)',
-        },
+      defaultProps: {
+        disableElevation: true,
+        disableRipple: false,
       },
-    },
-    MuiToggleButtonGroup: {
       styleOverrides: {
-        root: {
-          padding: '6px',
-          borderRadius: 10,
-          gap: 14,
-          display: 'inline-flex',
-          overflow: 'visible',
-        },
-        grouped: {
-          margin: 0,
+        root: ({ theme }) => ({
           borderRadius: 8,
-          // grouped children will maintain their own border and rounded corners; no inner border-left
-          '&:not(:first-of-type)': { marginLeft: 0 },
-        },
-      },
-    },
-    MuiToggleButton: {
-      styleOverrides: {
-        root: {
-          transition:
-            'transform 150ms cubic-bezier(.2,.8,.2,1), box-shadow 150ms cubic-bezier(.2,.8,.2,1), background-color 150ms cubic-bezier(.2,.8,.2,1)',
-          minHeight: 38,
-          borderRadius: 6,
-          border: '1px solid rgba(0,0,0,0.06)',
-          padding: '6px 12px',
+          padding: '8px 18px',
+          minHeight: 40,
           fontWeight: 600,
-          letterSpacing: '0.2px',
-          boxShadow: '0 4px 12px rgba(2,6,23,0.03)',
-          '&:hover': { boxShadow: '0 6px 18px rgba(2,6,23,0.05)', transform: 'translateY(-1px)' },
-          // ensure a crisp inner seam between adjacent buttons (horizontal and vertical)
-          '&:not(:first-of-type)': {
-            boxShadow: 'inset 1px 0 0 rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.06)',
-            backgroundClip: 'padding-box',
+          letterSpacing: 0,
+          textTransform: 'none',
+          transition: 'background-color 120ms ease, box-shadow 120ms ease, border-color 120ms ease, color 120ms ease',
+        }),
+        sizeLarge: { minHeight: 48, padding: '10px 22px', fontSize: '1rem' },
+        sizeSmall: { minHeight: 34, padding: '6px 12px', fontSize: '0.8125rem' },
+
+        /* ── contained primary — 44px to hit Apple HIG gloved-hand target ── */
+        containedPrimary: ({ theme }) => ({
+          minHeight: 44,
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.primary.contrastText,
+          boxShadow: 'none',
+          '&:hover': {
+            backgroundColor: theme.palette.primary.light,
+            boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, 0.4)}, 0 6px 16px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
           },
-          '&.Mui-selected': {
-            // prominent but subtle selected state; preserve seam visually
-            backgroundColor: '#155fa8',
-            color: '#ffffff',
-            boxShadow: 'inset 1px 0 0 rgba(0,0,0,0.06), 0 0 0 1px #0d3f73',
-            transform: 'none',
-            border: '1px solid #0d3f73',
-            zIndex: 'auto',
+          '&:active': {
+            backgroundColor: theme.palette.primary.dark,
+            boxShadow: 'none',
           },
-          '&.Mui-selected:hover': { backgroundColor: '#0d3f73' },
-          '&.Mui-selected svg': { color: '#ffffff', transform: 'scale(1.06)' },
-        },
-        // ensure grouped buttons keep their individual rounded corners in horizontal and vertical layouts
-        groupedHorizontal: { borderRadius: 6, '&:not(:first-of-type)': { marginLeft: 12 } },
-        groupedVertical: { borderRadius: 6, '&:not(:first-of-type)': { marginTop: 10 } },
-        sizeSmall: { padding: '6px 8px', minHeight: 34 },
-        sizeLarge: { padding: '8px 12px', minHeight: 40 },
+          '&.Mui-focusVisible': {
+            boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.5)}`,
+          },
+          '&.Mui-disabled': {
+            backgroundColor: theme.palette.secondary.main,
+            color: alpha('#FFFFFF', 0.5),
+          },
+        }),
+
+        containedSecondary: ({ theme }) => ({
+          backgroundColor: theme.palette.secondary.main,
+          color: theme.palette.secondary.contrastText,
+          border: `1px solid ${theme.palette.divider}`,
+          boxShadow: 'none',
+          '&:hover': {
+            backgroundColor: theme.palette.secondary.light,
+            borderColor: alpha('#FFFFFF', 0.16),
+          },
+          '&:active': {
+            backgroundColor: theme.palette.secondary.dark,
+          },
+          '&.Mui-focusVisible': {
+            boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.5)}`,
+          },
+          '&.Mui-disabled': {
+            backgroundColor: theme.palette.secondary.main,
+            color: alpha('#FFFFFF', 0.35),
+            borderColor: theme.palette.divider,
+          },
+        }),
+
+        outlinedPrimary: ({ theme }) => ({
+          borderWidth: 1.5,
+          borderColor: theme.palette.primary.main,
+          color: theme.palette.primary.main,
+          backgroundColor: 'transparent',
+          '&:hover': {
+            borderWidth: 1.5,
+            borderColor: theme.palette.primary.light,
+            backgroundColor: alpha(theme.palette.primary.main, 0.10),
+          },
+          '&:active': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.18),
+            borderColor: theme.palette.primary.dark,
+          },
+          '&.Mui-focusVisible': {
+            boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.4)}`,
+          },
+          '&.Mui-disabled': {
+            borderColor: theme.palette.divider,
+            color: alpha(theme.palette.text.primary, 0.5),
+          },
+        }),
+
+        textPrimary: ({ theme }) => ({
+          color: theme.palette.primary.main,
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+          },
+          '&:active': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.16),
+          },
+          '&.Mui-focusVisible': {
+            boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.4)}`,
+          },
+          '&.Mui-disabled': {
+            color: alpha(theme.palette.text.primary, 0.5),
+          },
+        }),
       },
     },
   },
