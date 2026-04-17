@@ -1,5 +1,17 @@
-import { parseLength, computeTapeOperation, closestTapeMeasure, formatLength } from './TapeCalc';
+import { parseLength, computeTapeOperation, closestTapeMeasure, formatLength, reducer, ACTIONS } from './TapeCalc';
 import Fraction from 'fraction.js';
+
+const baseState = () => ({
+  input: '',
+  operandA: '',
+  pendingOp: null,
+  phase: 'input',
+  resultText: '',
+  chainFrac: null,
+  error: null,
+  showFracPanel: false,
+  history: [],
+});
 
 describe('TapeCalc helpers', () => {
   test('parseLength handles mixed numbers and simple fractions', () => {
@@ -129,6 +141,76 @@ describe('TapeCalc helpers', () => {
       expect(formatLength(new Fraction(-147.5), { unit: 'ft-in' })).toBe("-12' 3 1/2\"");
       expect(formatLength(new Fraction(-10.5), { unit: 'in' })).toBe('-10 1/2');
       expect(formatLength(new Fraction(-1, 2), { unit: 'auto' })).toBe('-1/2');
+    });
+  });
+
+  describe('history in reducer', () => {
+    test('EQUALS pushes entry with display + raw + timestamp', () => {
+      const state = {
+        ...baseState(),
+        operandA: '10',
+        input: '5 1/2',
+        pendingOp: 'add',
+      };
+      const next = reducer(state, { type: ACTIONS.EQUALS });
+      expect(next.history).toHaveLength(1);
+      const entry = next.history[0];
+      expect(entry.a).toBe('10');
+      expect(entry.op).toBe('add');
+      expect(entry.b).toBe('5 1/2');
+      expect(entry.result).toBe('15 1/2');
+      expect(new Fraction(entry.aRaw).valueOf()).toBe(10);
+      expect(new Fraction(entry.bRaw).valueOf()).toBeCloseTo(5.5);
+      expect(new Fraction(entry.resultRaw).valueOf()).toBeCloseTo(15.5);
+      expect(typeof entry.timestamp).toBe('number');
+    });
+
+    test('history is newest-first and capped at 50', () => {
+      let state = baseState();
+      for (let i = 1; i <= 60; i++) {
+        state = {
+          ...state,
+          operandA: String(i),
+          input: '0',
+          pendingOp: 'add',
+          phase: 'input',
+          chainFrac: null,
+        };
+        state = reducer(state, { type: ACTIONS.EQUALS });
+      }
+      expect(state.history).toHaveLength(50);
+      // newest first: the most recent calc (i=60) is at index 0
+      expect(state.history[0].a).toBe('60');
+      // oldest kept is i=11 (60 - 50 + 1)
+      expect(state.history[49].a).toBe('11');
+    });
+
+    test('failed EQUALS does not push to history', () => {
+      const state = {
+        ...baseState(),
+        operandA: '5',
+        input: '0',
+        pendingOp: 'divide',
+      };
+      const next = reducer(state, { type: ACTIONS.EQUALS });
+      expect(next.error).toMatch(/Division by zero/);
+      expect(next.history).toHaveLength(0);
+    });
+
+    test('aRaw survives chained calculations', () => {
+      let state = baseState();
+      // 10 + 1/2 = 10 1/2
+      state = { ...state, operandA: '10', input: '1/2', pendingOp: 'add' };
+      state = reducer(state, { type: ACTIONS.EQUALS });
+      // Chain: × 2 = 21
+      state = { ...state, input: '2', pendingOp: 'multiply', phase: 'input' };
+      state = reducer(state, { type: ACTIONS.EQUALS });
+
+      expect(state.history).toHaveLength(2);
+      // second entry's a should reflect 10 1/2 (chained from prior chainFrac)
+      expect(state.history[0].a).toBe('10 1/2');
+      expect(new Fraction(state.history[0].aRaw).valueOf()).toBeCloseTo(10.5);
+      expect(state.history[0].result).toBe('21');
     });
   });
 });

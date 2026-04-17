@@ -311,6 +311,8 @@ export const ACTIONS = Object.freeze({
 
 const QUICK_FRACS = ['1/2', '1/4', '3/4', '1/8'];
 
+const HISTORY_LIMIT = 50;
+
 const initialState = {
   input: '',
   operandA: '',
@@ -320,6 +322,7 @@ const initialState = {
   chainFrac: null,
   error: null,
   showFracPanel: false,
+  history: [],
 };
 
 // Reset calc state while preserving UI-only bits (showFracPanel).
@@ -427,12 +430,25 @@ export function reducer(state, action) {
       try {
         const raw = computeTapeOperation(a, b, state.pendingOp);
         const nearest = closestTapeMeasure(raw);
+        const resultDisplay = nearest.toFraction(true);
+        const aDisplay = state.chainFrac ? state.chainFrac.toFraction(true) : state.operandA;
+        const entry = {
+          a: aDisplay,
+          aRaw: a.toFraction(),
+          op: state.pendingOp,
+          b: state.input,
+          bRaw: b.toFraction(),
+          result: resultDisplay,
+          resultRaw: nearest.toFraction(),
+          timestamp: Date.now(),
+        };
         return {
           ...state,
-          resultText: nearest.toFraction(true),
+          resultText: resultDisplay,
           chainFrac: nearest,
           error: null,
           phase: 'result',
+          history: [entry, ...state.history].slice(0, HISTORY_LIMIT),
         };
       } catch (err) {
         return { ...state, error: err.message, chainFrac: null, phase: 'result' };
