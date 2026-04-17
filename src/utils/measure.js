@@ -1,5 +1,10 @@
 import Fraction from 'fraction.js';
 
+/**
+ * Round a value to the nearest 1/16".
+ * @param {number|string|Fraction} value
+ * @returns {Fraction}
+ */
 export function closestSixteenth(value) {
   return new Fraction(Math.round(16 * new Fraction(value).valueOf()), 16);
 }
@@ -18,9 +23,16 @@ function parseBareInches(s) {
   throw new Error('Invalid length');
 }
 
-// Accepts bare inches ("10", "1/2", "10 1/2") and feet-inches forms:
-//   "12'", "3\"", "12' 3\"", "12' 3 1/2\"", "12'3-1/2\""
-// All returned as a Fraction of inches.
+/**
+ * Parse a length string to a Fraction of inches.
+ *
+ * Accepts bare inches ("10", "1/2", "10 1/2") and feet-inches forms:
+ * `12'`, `3"`, `12' 3"`, `12' 3 1/2"`, `12'3-1/2"`.
+ *
+ * @param {string} input
+ * @returns {Fraction} Fraction of inches.
+ * @throws {Error} On empty or malformed input.
+ */
 export function parseLength(input) {
   const s = String(input ?? '').trim();
   if (!s) throw new Error('Empty length');
@@ -80,13 +92,20 @@ export function parseLength(input) {
   return feet.mul(12).add(inches);
 }
 
-// Format a Fraction of inches for display. Rounds the total to the
-// nearest 1/16" before splitting into feet and inches, so boundaries
-// like 11 16/16" become 1' 0" rather than 0' 12".
-//
-//   'in'    → mixed inches, no unit marker ("10 1/2")
-//   'ft-in' → feet and inches, marked ("12' 3 1/2\"")
-//   'auto'  → ft-in when |value| >= 12", else inches
+/**
+ * Format a Fraction of inches for display. Rounds the total to the
+ * nearest 1/16" before splitting into feet and inches, so boundaries
+ * like `11 16/16"` become `1'` rather than `0' 12"`.
+ *
+ * Units:
+ *   - `'in'`    → mixed inches, no unit marker (`"10 1/2"`)
+ *   - `'ft-in'` → feet and inches, marked (`"12' 3 1/2\""`)
+ *   - `'auto'`  → ft-in when `|value| >= 12"`, else inches
+ *
+ * @param {number|string|Fraction} fraction Length in inches.
+ * @param {{unit?: 'in'|'ft-in'|'auto'}} [options]
+ * @returns {string}
+ */
 export function formatLength(fraction, options = {}) {
   const { unit = 'in' } = options;
 

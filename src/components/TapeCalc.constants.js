@@ -11,6 +11,11 @@ export const FRAC_GRID = [
 
 export const QUICK_FRACS = ['1/2', '1/4', '3/4', '1/8'];
 
+/**
+ * Action types dispatched to the TapeCalc reducer. Frozen so callers can
+ * rely on referential stability.
+ * @type {Readonly<Record<string, string>>}
+ */
 export const ACTIONS = Object.freeze({
   DIGIT: 'DIGIT',
   FRAC: 'FRAC',

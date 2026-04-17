@@ -19,12 +19,25 @@ export { ACTIONS };
    Exported calculation logic — unchanged
    ═══════════════════════════════════════════════════════════════ */
 
+/**
+ * Round a numeric or Fraction length (in inches) to the nearest 1/16".
+ * @param {number|string|import('fraction.js').default} value
+ * @returns {import('fraction.js').default} Fraction of inches.
+ */
 export function closestTapeMeasure(value) {
   return closestSixteenth(value);
 }
 
 export { parseLength, formatLength };
 
+/**
+ * Apply an arithmetic operation to two Fraction operands.
+ * @param {import('fraction.js').default} aFraction Left operand (inches).
+ * @param {import('fraction.js').default} bFraction Right operand (inches or scalar).
+ * @param {'add'|'subtract'|'multiply'|'divide'} op
+ * @returns {import('fraction.js').default} Resulting Fraction.
+ * @throws If operands are missing/invalid, on unknown op, or on division by zero.
+ */
 export function computeTapeOperation(aFraction, bFraction, op) {
   if (!(aFraction && typeof aFraction.valueOf === 'function'))
     throw new Error('Invalid first operand');
@@ -95,6 +108,18 @@ const cleared = (state) => ({
   error: null,
 });
 
+/**
+ * Pure reducer for the TapeCalc state machine.
+ *
+ * Phases: 'input' (typing operand), 'operator' (operator pressed, awaiting
+ * next operand), 'result' (equals pressed or error shown). History is
+ * pushed newest-first on a successful EQUALS and capped at HISTORY_LIMIT.
+ *
+ * @param {object} state Current state.
+ * @param {{type: string, [key: string]: any}} action Action whose `type`
+ *   is one of the values in {@link ACTIONS}.
+ * @returns {object} Next state.
+ */
 export function reducer(state, action) {
   switch (action.type) {
     case ACTIONS.DIGIT: {
@@ -276,6 +301,16 @@ const formatDecimal = (frac) => {
   return Number.parseFloat(n.toFixed(4)).toString();
 };
 
+/**
+ * TapeCalc — carpentry/construction calculator with fraction arithmetic,
+ * feet-and-inches parsing, a tape-style history, and keyboard input.
+ *
+ * State is managed by {@link reducer}; history persists to localStorage
+ * under {@link HISTORY_KEY}. Tapping the result cycles display units
+ * (in → ft-in → decimal).
+ *
+ * @returns {JSX.Element}
+ */
 export default function TapeCalc() {
   const [state, dispatch] = React.useReducer(reducer, initialState, (s) => ({
     ...s,
