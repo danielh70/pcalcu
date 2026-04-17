@@ -176,10 +176,22 @@ const STYLES = `
 /* ── grid row helpers ── */
 .tc-row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
 .tc-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.tc-row5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 @media (min-width: 601px) {
   .tc-row4 { gap: 6px; }
   .tc-row3 { gap: 6px; }
+  .tc-row5 { gap: 6px; }
 }
+
+/* ── quick-entry row (foot mark + permanent fractions) ── */
+.tc-quick {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .95rem;
+  font-weight: 600;
+  min-height: 50px;
+}
+.tc-quick:active { background: #2e3e50; }
 
 /* ── button base ── */
 .tc-btn {
@@ -294,7 +306,10 @@ export const ACTIONS = Object.freeze({
   OPEN_FRAC: 'OPEN_FRAC',
   CLOSE_FRAC: 'CLOSE_FRAC',
   RECALL: 'RECALL',
+  FOOT_MARK: 'FOOT_MARK',
 });
+
+const QUICK_FRACS = ['1/2', '1/4', '3/4', '1/8'];
 
 const initialState = {
   input: '',
@@ -449,6 +464,14 @@ export function reducer(state, action) {
     case ACTIONS.RECALL:
       return { ...cleared(state), input: action.display };
 
+    // A foot mark can only follow a bare integer, and only once. Trailing
+    // space is part of the token so subsequent inputs render cleanly.
+    case ACTIONS.FOOT_MARK: {
+      if (state.phase !== 'input') return state;
+      if (!/^\d+$/.test(state.input)) return state;
+      return { ...state, error: null, input: state.input + "' " };
+    }
+
     default:
       return state;
   }
@@ -561,6 +584,27 @@ export default function TapeCalc() {
               ))}
             </div>
           ))}
+
+          {/* quick-entry row: foot mark + permanent fractions */}
+          <div className="tc-row5">
+            <button
+              className="tc-btn tc-quick"
+              aria-label="foot mark"
+              onClick={() => run({ type: ACTIONS.FOOT_MARK })}
+            >
+              {"'"}
+            </button>
+            {QUICK_FRACS.map((f) => (
+              <button
+                key={f}
+                className="tc-btn tc-quick"
+                aria-label={`quick ${f}`}
+                onClick={() => run({ type: ACTIONS.FRAC, frac: f })}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
 
           {/* bottom row: C, 0, FRAC, ⌫ */}
           <div className="tc-row4">

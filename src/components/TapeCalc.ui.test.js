@@ -304,4 +304,55 @@ describe('TapeCalc UI', () => {
       expect(screen.getByTestId('display-value')).toHaveTextContent('0');
     });
   });
+
+  describe('quick-entry row', () => {
+    test('foot-mark button appends to a whole-number input', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: '2' }));
+      await userEvent.click(screen.getByRole('button', { name: /foot mark/i }));
+      expect(screen.getByTestId('display-value')).toHaveTextContent(/12'/);
+    });
+
+    test('foot mark is a no-op when input is empty', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: /foot mark/i }));
+      expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    });
+
+    test('foot mark is a no-op when input already contains a fraction', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: '1/2' }));
+      await userEvent.click(screen.getByRole('button', { name: /foot mark/i }));
+      expect(screen.getByTestId('display-value')).toHaveTextContent('5 1/2');
+    });
+
+    test('full ft-in entry computes correctly: 12\' 3" + 9" = 144"', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: '2' }));
+      await userEvent.click(screen.getByRole('button', { name: /foot mark/i }));
+      await userEvent.click(screen.getByRole('button', { name: '3' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '9' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+      // Display is still inches-style mixed-number until Phase 2.7 toggle lands.
+      expect(screen.getByLabelText('result')).toHaveTextContent('156');
+    });
+
+    test('quick fraction buttons dispatch FRAC without opening overlay', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '7' }));
+      await userEvent.click(screen.getByRole('button', { name: /quick 1\/4/i }));
+      expect(screen.getByTestId('display-value')).toHaveTextContent('7 1/4');
+    });
+
+    test('quick and overlay fractions have distinct accessible names', () => {
+      render(<TapeCalc />);
+      // Overlay "1/2" by plain text; quick "1/2" by aria-label
+      expect(screen.getByRole('button', { name: '1/2' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'quick 1/2' })).toBeInTheDocument();
+    });
+  });
 });
