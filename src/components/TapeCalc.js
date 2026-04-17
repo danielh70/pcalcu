@@ -72,6 +72,7 @@ const STYLES = `
   background: #1c1c1e;
   user-select: none;
   -webkit-user-select: none;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 @media (max-width: 600px) {
   .tc-calc { border-radius: 0; flex: 1; }
