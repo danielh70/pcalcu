@@ -404,6 +404,35 @@ describe('TapeCalc UI', () => {
       expect(result).toHaveTextContent('Division by zero');
     });
 
+    test('history list appears after a calculation and tapping a row recalls the result', async () => {
+      render(<TapeCalc />);
+      // 10 + 5 = 15
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: '0' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+      const list = screen.getByTestId('history-list');
+      expect(list).toBeInTheDocument();
+      const recall = screen.getByRole('button', { name: 'recall 15' });
+      expect(recall).toBeInTheDocument();
+
+      // Start a new calculation entirely to clear the display
+      await userEvent.click(screen.getByRole('button', { name: /clear/i }));
+      expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+
+      // Tap history row to recall
+      await userEvent.click(recall);
+      expect(screen.getByTestId('display-value')).toHaveTextContent('15');
+
+      // Continue: × 2 = 30 (uses chainFrac fast path)
+      await userEvent.click(screen.getByRole('button', { name: /multiply/i }));
+      await userEvent.click(screen.getByRole('button', { name: '2' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+      expect(screen.getByLabelText('result')).toHaveTextContent('30');
+    });
+
     test('ft-in shows feet-inches form with fractional inches', async () => {
       render(<TapeCalc />);
       // 12' 3 1/2" + 0 = 147 1/2" → ft-in: 12' 3 1/2"

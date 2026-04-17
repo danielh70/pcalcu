@@ -1,4 +1,5 @@
 import React from 'react';
+import Fraction from 'fraction.js';
 import { closestSixteenth, parseLength, formatLength } from '../utils/measure';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -62,6 +63,38 @@ const haptic = () => {
    ═══════════════════════════════════════════════════════════════ */
 
 const STYLES = `
+/* ── history list ── */
+.tc-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 120px;
+  overflow-y: auto;
+  background: #141416;
+  border-bottom: 1px solid #2d2d30;
+  flex-shrink: 0;
+}
+.tc-history-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: .5em;
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: .75rem;
+  text-align: right;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  width: 100%;
+}
+.tc-history-row:active { background: #23232a; }
+.tc-history-expr { color: #888; }
+.tc-history-result { color: #f5f5f5; font-weight: 600; }
+
 /* ── calculator shell ── */
 .tc-calc {
   display: flex;
@@ -347,7 +380,9 @@ export function reducer(state, action) {
         return { ...state, error: null, input: action.digit, phase: 'input' };
       }
       const newInput = /\d+\/\d+/.test(state.input) ? action.digit : state.input + action.digit;
-      return { ...state, error: null, input: newInput };
+      // Editing a RECALL'd input invalidates its chainFrac shortcut.
+      const chainFrac = state.operandA === '' ? null : state.chainFrac;
+      return { ...state, error: null, input: newInput, chainFrac };
     }
 
     case ACTIONS.FRAC: {
@@ -362,7 +397,8 @@ export function reducer(state, action) {
       if (!t) newInput = action.frac;
       else if (/^\d+\/\d+$/.test(t)) newInput = action.frac;
       else newInput = t.replace(/\s+\d+\/\d+$/, '') + ' ' + action.frac;
-      return { ...state, error: null, input: newInput };
+      const chainFrac = state.operandA === '' ? null : state.chainFrac;
+      return { ...state, error: null, input: newInput, chainFrac };
     }
 
     case ACTIONS.OP: {
@@ -460,10 +496,11 @@ export function reducer(state, action) {
       if (state.phase === 'operator') return state;
       const prev = state.input;
       if (!prev) return state;
+      const chainFrac = state.operandA === '' ? null : state.chainFrac;
       const m = prev.match(/\s+\d+\/\d+$/);
-      if (m) return { ...state, input: prev.slice(0, -m[0].length) };
-      if (/^\d+\/\d+$/.test(prev)) return { ...state, input: '' };
-      return { ...state, input: prev.slice(0, -1) };
+      if (m) return { ...state, input: prev.slice(0, -m[0].length), chainFrac };
+      if (/^\d+\/\d+$/.test(prev)) return { ...state, input: '', chainFrac };
+      return { ...state, input: prev.slice(0, -1), chainFrac };
     }
 
     case ACTIONS.CLEAR:
@@ -475,17 +512,26 @@ export function reducer(state, action) {
     case ACTIONS.CLOSE_FRAC:
       return { ...state, showFracPanel: false };
 
-    // RECALL loads a prior result as the current input, ready to combine
-    // with an operator. (Phase 3.10 wires this to the history UI.)
-    case ACTIONS.RECALL:
-      return { ...cleared(state), input: action.display };
+    // RECALL loads a prior result as the current input and pre-seeds
+    // chainFrac from the raw Fraction string, so a following operator +
+    // equals skips the parseLength round-trip. Editing the input before
+    // the operator clears chainFrac (handled in DIGIT/FRAC/BACKSPACE/
+    // FOOT_MARK via the operandA === '' guard).
+    case ACTIONS.RECALL: {
+      let chainFrac = null;
+      if (action.raw) {
+        try { chainFrac = new Fraction(action.raw); } catch { /* fall through */ }
+      }
+      return { ...cleared(state), input: action.display, chainFrac };
+    }
 
     // A foot mark can only follow a bare integer, and only once. Trailing
     // space is part of the token so subsequent inputs render cleanly.
     case ACTIONS.FOOT_MARK: {
       if (state.phase !== 'input') return state;
       if (!/^\d+$/.test(state.input)) return state;
-      return { ...state, error: null, input: state.input + "' " };
+      const chainFrac = state.operandA === '' ? null : state.chainFrac;
+      return { ...state, error: null, input: state.input + "' ", chainFrac };
     }
 
     default:
@@ -506,7 +552,7 @@ const formatDecimal = (frac) => {
 
 export default function TapeCalc() {
   const [state, dispatch] = React.useReducer(reducer, initialState);
-  const { input, operandA, pendingOp, phase, resultText, chainFrac, error, showFracPanel } = state;
+  const { input, operandA, pendingOp, phase, resultText, chainFrac, error, showFracPanel, history } = state;
   const [displayUnit, setDisplayUnit] = React.useState('in');
 
   const run = React.useCallback((action) => { haptic(); dispatch(action); }, []);
@@ -571,6 +617,30 @@ export default function TapeCalc() {
   return (
     <div className="tc-calc">
       <style>{STYLES}</style>
+
+      {/* ── history ── */}
+      {history.length > 0 && (
+        <div className="tc-history" data-testid="history-list">
+          {history.map((entry, idx) => (
+            <button
+              key={`${entry.timestamp}-${idx}`}
+              className="tc-history-row"
+              aria-label={`recall ${entry.result}`}
+              onClick={() => run({
+                type: ACTIONS.RECALL,
+                display: entry.result,
+                raw: entry.resultRaw,
+              })}
+            >
+              <span className="tc-history-expr">
+                {entry.a} {OP_SYMBOLS[entry.op]} {entry.b}
+              </span>
+              <span className="tc-history-expr">=</span>
+              <span className="tc-history-result">{entry.result}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── display ── */}
       <div className="tc-display">
