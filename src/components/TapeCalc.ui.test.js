@@ -355,4 +355,72 @@ describe('TapeCalc UI', () => {
       expect(screen.getByRole('button', { name: 'quick 1/2' })).toBeInTheDocument();
     });
   });
+
+  describe('unit-display toggle', () => {
+    test('result tap cycles in → ft-in → decimal → in', async () => {
+      render(<TapeCalc />);
+      // Compute 155 + 1 = 156 inches
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+      const result = screen.getByLabelText('result');
+      expect(result).toHaveTextContent('156');
+
+      await userEvent.click(result);
+      expect(result).toHaveTextContent("13'");
+
+      await userEvent.click(result);
+      expect(result).toHaveTextContent('156');
+      // decimal mode — no unit mark and no fraction
+      expect(result.textContent).toBe('156');
+
+      await userEvent.click(result);
+      expect(result).toHaveTextContent('156');
+    });
+
+    test('tap during input phase does nothing', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      const result = screen.getByLabelText('result');
+      await userEvent.click(result);
+      expect(result).toHaveTextContent('5');
+      // role is not "button" when non-cycleable
+      expect(result).not.toHaveAttribute('role', 'button');
+    });
+
+    test('tap during error does nothing', async () => {
+      render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: /divide/i }));
+      await userEvent.click(screen.getByRole('button', { name: '0' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+      const result = screen.getByLabelText('result');
+      expect(result).toHaveTextContent('Division by zero');
+      await userEvent.click(result);
+      expect(result).toHaveTextContent('Division by zero');
+    });
+
+    test('ft-in shows feet-inches form with fractional inches', async () => {
+      render(<TapeCalc />);
+      // 12' 3 1/2" + 0 = 147 1/2" → ft-in: 12' 3 1/2"
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: '2' }));
+      await userEvent.click(screen.getByRole('button', { name: /foot mark/i }));
+      await userEvent.click(screen.getByRole('button', { name: '3' }));
+      await userEvent.click(screen.getByRole('button', { name: 'quick 1/2' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '0' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+      const result = screen.getByLabelText('result');
+      expect(result).toHaveTextContent('147 1/2');
+
+      await userEvent.click(result);
+      expect(result).toHaveTextContent("12' 3 1/2\"");
+    });
+  });
 });

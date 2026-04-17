@@ -481,11 +481,26 @@ export function reducer(state, action) {
    Component — thin wrapper over reducer; haptic side-effect lives here
    ═══════════════════════════════════════════════════════════════ */
 
+const UNIT_CYCLE = { in: 'ft-in', 'ft-in': 'decimal', decimal: 'in' };
+
+const formatDecimal = (frac) => {
+  const n = frac.valueOf();
+  return Number.parseFloat(n.toFixed(4)).toString();
+};
+
 export default function TapeCalc() {
   const [state, dispatch] = React.useReducer(reducer, initialState);
-  const { input, operandA, pendingOp, phase, resultText, error, showFracPanel } = state;
+  const { input, operandA, pendingOp, phase, resultText, chainFrac, error, showFracPanel } = state;
+  const [displayUnit, setDisplayUnit] = React.useState('in');
 
   const run = React.useCallback((action) => { haptic(); dispatch(action); }, []);
+
+  const canCycleUnit = phase === 'result' && !error && chainFrac;
+  const cycleUnit = () => {
+    if (!canCycleUnit) return;
+    haptic();
+    setDisplayUnit((u) => UNIT_CYCLE[u] || 'in');
+  };
 
   /* ── keyboard input ── */
 
@@ -518,7 +533,13 @@ export default function TapeCalc() {
 
   /* ── derived display ── */
 
-  const mainDisplay = phase === 'result' ? (error || resultText || '0') : (input || '0');
+  const mainDisplay = (() => {
+    if (phase !== 'result') return input || '0';
+    if (error) return error;
+    if (!chainFrac) return resultText || '0';
+    if (displayUnit === 'decimal') return formatDecimal(chainFrac);
+    return formatLength(chainFrac, { unit: displayUnit });
+  })();
 
   const expressionTape = (() => {
     if (!pendingOp) return '';
@@ -544,7 +565,10 @@ export default function TapeCalc() {
           className={`tc-main${error && phase === 'result' ? ' tc-main--error' : ''}`}
           data-testid="display-value"
           aria-label="result"
-          style={{ fontSize: mainFontSize }}
+          role={canCycleUnit ? 'button' : undefined}
+          tabIndex={canCycleUnit ? 0 : undefined}
+          onClick={cycleUnit}
+          style={{ fontSize: mainFontSize, cursor: canCycleUnit ? 'pointer' : 'default' }}
         >
           {mainDisplay}
         </div>
