@@ -1,0 +1,286 @@
+/* ── history list ── */
+.tc-history-wrap {
+  display: flex;
+  flex-direction: column;
+  background: #141416;
+  border-bottom: 1px solid #2d2d30;
+  flex-shrink: 0;
+}
+.tc-history-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  border-bottom: 1px solid #23232a;
+}
+.tc-history-clear {
+  border: none;
+  background: transparent;
+  color: #888;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: .7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tc-history-clear:active { background: #23232a; }
+.tc-history-clear--confirm { color: #ff3b30; }
+.tc-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.tc-history-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: .5em;
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: .75rem;
+  text-align: right;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  width: 100%;
+}
+.tc-history-row:active { background: #23232a; }
+.tc-history-expr { color: #888; }
+.tc-history-result { color: #f5f5f5; font-weight: 600; }
+
+/* ── calculator shell ── */
+.tc-calc {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1c1c1e;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (max-width: 600px) {
+  .tc-calc { border-radius: 0; flex: 1; }
+}
+
+/* ── display area ── */
+.tc-display {
+  padding: 16px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 80px;
+}
+@media (min-width: 601px) {
+  .tc-display { padding: 20px 20px 14px; min-height: 90px; }
+}
+
+.tc-expr {
+  font-size: .875rem;
+  color: #888;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  min-height: 1.25rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: right;
+}
+
+.tc-main {
+  font-weight: 700;
+  color: #f5f5f5;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: right;
+  min-height: 3rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  transform-origin: right bottom;
+  transition: transform 120ms ease;
+}
+.tc-main--error { color: #ff3b30; }
+
+/* ── keypad wrapper (positioned for overlay) ── */
+.tc-keypad {
+  position: relative;
+  padding: 6px;
+  background: #2d2d30;
+}
+@media (max-width: 600px) {
+  .tc-keypad { flex: 1; display: flex; flex-direction: column; }
+}
+@media (min-width: 601px) {
+  .tc-keypad { padding: 8px; }
+}
+
+/* ── normal keys panel ── */
+.tc-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: opacity 150ms ease;
+}
+@media (max-width: 600px) {
+  .tc-keys { flex: 1; justify-content: space-between; }
+}
+.tc-keys--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── fraction selection panel (overlay) ── */
+.tc-frac-panel {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 5px;
+  padding: 6px;
+  background: #2d2d30;
+  transition: opacity 150ms ease;
+  z-index: 1;
+}
+.tc-frac-panel--hidden {
+  opacity: 0;
+  z-index: -1;
+}
+
+@media (min-width: 601px) {
+  .tc-keys { gap: 6px; }
+  .tc-frac-panel { gap: 6px; padding: 8px; }
+}
+
+/* ── grid row helpers ── */
+.tc-row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.tc-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.tc-row5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+@media (min-width: 601px) {
+  .tc-row4 { gap: 6px; }
+  .tc-row3 { gap: 6px; }
+  .tc-row5 { gap: 6px; }
+}
+
+/* ── quick-entry row (foot mark + permanent fractions) ── */
+.tc-quick {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .95rem;
+  font-weight: 600;
+  min-height: 50px;
+}
+.tc-quick:active { background: #2e3e50; }
+
+/* ── button base ── */
+.tc-btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  border-radius: 8px;
+  transition: background 60ms ease;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── number buttons (taller now that fraction rows are gone) ── */
+.tc-num {
+  background: #505055;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 500;
+  min-height: 70px;
+}
+.tc-num:active { background: #3a3a3e; }
+
+/* ── operator buttons ── */
+.tc-op {
+  background: #505055;
+  color: #f5a623;
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-height: 54px;
+}
+.tc-op:active { background: #3a3a3e; }
+.tc-op[aria-pressed="true"] {
+  background: #f5a623;
+  color: #fff;
+}
+.tc-op[aria-pressed="true"]:active {
+  background: #d4891a;
+}
+
+/* ── action buttons (C / backspace) ── */
+.tc-action {
+  background: #505055;
+  color: #aaa;
+  font-size: 1.15rem;
+  font-weight: 600;
+  min-height: 70px;
+}
+.tc-action:active { background: #3a3a3e; }
+.tc-clear { color: #ff3b30; }
+
+/* ── FRAC mode button (bottom row) ── */
+.tc-frac-btn {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  min-height: 70px;
+}
+.tc-frac-btn:active { background: #2e3e50; }
+
+/* ── fraction buttons inside the panel ── */
+.tc-frac {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .9rem;
+  font-weight: 600;
+}
+.tc-frac:active { background: #2e3e50; }
+
+/* ── close button inside fraction panel ── */
+.tc-frac-close {
+  background: #505055;
+  color: #ff3b30;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.tc-frac-close:active { background: #3a3a3e; }
+
+/* ── equals button ── */
+.tc-eq {
+  background: #2a7c8c;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  min-height: 58px;
+  width: 100%;
+}
+.tc-eq:active:not(:disabled) { background: #1e5f6b; }
+.tc-eq:disabled { opacity: .35; cursor: default; }
