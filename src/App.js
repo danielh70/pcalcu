@@ -1,6 +1,5 @@
 import React from 'react';
 import TopNav from './components/TopNav';
-import Divider from '@mui/material/Divider';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -35,16 +34,13 @@ export default function App() {
         <Tabs
           value={value}
           onChange={handleChange}
-          centered
           variant='fullWidth'
-          sx={{ mb: 1 }}
           aria-label='Main navigation tabs'
         >
           {/* <Tab label='Post Level' id='tab-0' aria-controls='tabpanel-0' /> */}
           <Tab label='Tape Calc' id='tab-0' aria-controls='tabpanel-0' />
           <Tab label='Systems' id='tab-1' aria-controls='tabpanel-1' />
         </Tabs>
-        <Divider sx={{ mb: { xs: 0, sm: 2 } }} />
         {/* <TabPanel value={value} index={0}>
           <div className='tab-content-card'>
             <PostLevel />

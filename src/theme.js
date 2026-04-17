@@ -121,6 +121,91 @@ const theme = createTheme({
       ],
     },
 
+    MuiAppBar: {
+      defaultProps: { elevation: 0, color: 'transparent' },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: theme.palette.background.default,
+          backgroundImage: 'none',
+          color: theme.palette.text.primary,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          boxShadow: 'none',
+        }),
+      },
+    },
+
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          minHeight: 56,
+          '@media (min-width: 600px)': { minHeight: 64 },
+        },
+      },
+    },
+
+    MuiTabs: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: theme.palette.background.default,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          minHeight: 52,
+        }),
+        indicator: ({ theme }) => ({
+          height: 3,
+          borderRadius: '2px 2px 0 0',
+          backgroundColor: theme.palette.primary.main,
+        }),
+      },
+    },
+
+    MuiTab: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          textTransform: 'none',
+          fontFamily: SANS_STACK,
+          fontWeight: 600,
+          fontSize: '0.9375rem',
+          letterSpacing: 0,
+          minHeight: 52,
+          padding: '14px 16px',
+          color: theme.palette.text.secondary,
+          transition: 'color 120ms ease, background-color 120ms ease',
+          '&:hover': {
+            color: theme.palette.text.primary,
+            backgroundColor: alpha('#FFFFFF', 0.03),
+          },
+          '&.Mui-selected': {
+            color: theme.palette.text.primary,
+            fontWeight: 700,
+          },
+          '&.Mui-focusVisible': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.12),
+          },
+        }),
+      },
+    },
+
+    MuiPaper: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundImage: 'none',
+          backgroundColor: theme.palette.background.paper,
+        }),
+        outlined: ({ theme }) => ({
+          borderColor: theme.palette.divider,
+        }),
+      },
+    },
+
+    MuiDivider: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderColor: theme.palette.divider,
+        }),
+      },
+    },
+
     MuiButton: {
       defaultProps: {
         disableElevation: true,
