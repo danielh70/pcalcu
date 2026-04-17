@@ -64,15 +64,39 @@ const haptic = () => {
 
 const STYLES = `
 /* ── history list ── */
+.tc-history-wrap {
+  display: flex;
+  flex-direction: column;
+  background: #141416;
+  border-bottom: 1px solid #2d2d30;
+  flex-shrink: 0;
+}
+.tc-history-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  border-bottom: 1px solid #23232a;
+}
+.tc-history-clear {
+  border: none;
+  background: transparent;
+  color: #888;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: .7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tc-history-clear:active { background: #23232a; }
+.tc-history-clear--confirm { color: #ff3b30; }
 .tc-history {
   display: flex;
   flex-direction: column;
   gap: 1px;
   max-height: 120px;
   overflow-y: auto;
-  background: #141416;
-  border-bottom: 1px solid #2d2d30;
-  flex-shrink: 0;
 }
 .tc-history-row {
   display: flex;
@@ -340,7 +364,21 @@ export const ACTIONS = Object.freeze({
   CLOSE_FRAC: 'CLOSE_FRAC',
   RECALL: 'RECALL',
   FOOT_MARK: 'FOOT_MARK',
+  CLEAR_HISTORY: 'CLEAR_HISTORY',
 });
+
+const HISTORY_KEY = 'tapecalc.history.v1';
+
+const loadHistory = () => {
+  try {
+    const raw = typeof localStorage !== 'undefined' && localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(0, 50) : [];
+  } catch {
+    return [];
+  }
+};
 
 const QUICK_FRACS = ['1/2', '1/4', '3/4', '1/8'];
 
@@ -506,6 +544,9 @@ export function reducer(state, action) {
     case ACTIONS.CLEAR:
       return cleared(state);
 
+    case ACTIONS.CLEAR_HISTORY:
+      return { ...state, history: [] };
+
     case ACTIONS.OPEN_FRAC:
       return { ...state, showFracPanel: true };
 
@@ -551,11 +592,47 @@ const formatDecimal = (frac) => {
 };
 
 export default function TapeCalc() {
-  const [state, dispatch] = React.useReducer(reducer, initialState);
+  const [state, dispatch] = React.useReducer(reducer, initialState, (s) => ({
+    ...s,
+    history: loadHistory(),
+  }));
   const { input, operandA, pendingOp, phase, resultText, chainFrac, error, showFracPanel, history } = state;
   const [displayUnit, setDisplayUnit] = React.useState('in');
+  const [confirmClear, setConfirmClear] = React.useState(false);
+  const confirmTimerRef = React.useRef(null);
 
   const run = React.useCallback((action) => { haptic(); dispatch(action); }, []);
+
+  // Persist history to localStorage on every change.
+  React.useEffect(() => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      }
+    } catch { /* quota or privacy mode — silent */ }
+  }, [history]);
+
+  React.useEffect(() => () => {
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+  }, []);
+
+  const handleClearHistory = () => {
+    haptic();
+    if (confirmClear) {
+      dispatch({ type: ACTIONS.CLEAR_HISTORY });
+      setConfirmClear(false);
+      if (confirmTimerRef.current) {
+        clearTimeout(confirmTimerRef.current);
+        confirmTimerRef.current = null;
+      }
+      return;
+    }
+    setConfirmClear(true);
+    confirmTimerRef.current = setTimeout(() => {
+      setConfirmClear(false);
+      confirmTimerRef.current = null;
+    }, 3000);
+  };
 
   const canCycleUnit = phase === 'result' && !error && chainFrac;
   const cycleUnit = () => {
@@ -620,25 +697,36 @@ export default function TapeCalc() {
 
       {/* ── history ── */}
       {history.length > 0 && (
-        <div className="tc-history" data-testid="history-list">
-          {history.map((entry, idx) => (
+        <div className="tc-history-wrap">
+          <div className="tc-history-header">
             <button
-              key={`${entry.timestamp}-${idx}`}
-              className="tc-history-row"
-              aria-label={`recall ${entry.result}`}
-              onClick={() => run({
-                type: ACTIONS.RECALL,
-                display: entry.result,
-                raw: entry.resultRaw,
-              })}
+              className={`tc-history-clear${confirmClear ? ' tc-history-clear--confirm' : ''}`}
+              aria-label={confirmClear ? 'confirm clear history' : 'clear history'}
+              onClick={handleClearHistory}
             >
-              <span className="tc-history-expr">
-                {entry.a} {OP_SYMBOLS[entry.op]} {entry.b}
-              </span>
-              <span className="tc-history-expr">=</span>
-              <span className="tc-history-result">{entry.result}</span>
+              {confirmClear ? 'Clear history?' : 'Clear'}
             </button>
-          ))}
+          </div>
+          <div className="tc-history" data-testid="history-list">
+            {history.map((entry, idx) => (
+              <button
+                key={`${entry.timestamp}-${idx}`}
+                className="tc-history-row"
+                aria-label={`recall ${entry.result}`}
+                onClick={() => run({
+                  type: ACTIONS.RECALL,
+                  display: entry.result,
+                  raw: entry.resultRaw,
+                })}
+              >
+                <span className="tc-history-expr">
+                  {entry.a} {OP_SYMBOLS[entry.op]} {entry.b}
+                </span>
+                <span className="tc-history-expr">=</span>
+                <span className="tc-history-result">{entry.result}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

@@ -3,6 +3,10 @@ import { render, screen, fireEvent, createEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TapeCalc from './TapeCalc';
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 describe('TapeCalc UI', () => {
   test('basic calculation: 10 ÷ 1/2 = 20', async () => {
     render(<TapeCalc />);
@@ -66,7 +70,7 @@ describe('TapeCalc UI', () => {
 
     expect(screen.getByLabelText('result')).toHaveTextContent('8');
 
-    await userEvent.click(screen.getByRole('button', { name: /clear/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'clear' }));
     expect(screen.getByTestId('display-value')).toHaveTextContent('0');
     expect(screen.getByTestId('expression-tape').textContent).toBe('');
   });
@@ -419,7 +423,7 @@ describe('TapeCalc UI', () => {
       expect(recall).toBeInTheDocument();
 
       // Start a new calculation entirely to clear the display
-      await userEvent.click(screen.getByRole('button', { name: /clear/i }));
+      await userEvent.click(screen.getByRole('button', { name: 'clear' }));
       expect(screen.getByTestId('display-value')).toHaveTextContent('0');
 
       // Tap history row to recall
@@ -431,6 +435,49 @@ describe('TapeCalc UI', () => {
       await userEvent.click(screen.getByRole('button', { name: '2' }));
       await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
       expect(screen.getByLabelText('result')).toHaveTextContent('30');
+    });
+
+    test('clear-history button requires two taps', async () => {
+      render(<TapeCalc />);
+      // produce one history entry
+      await userEvent.click(screen.getByRole('button', { name: '7' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+      expect(screen.getByTestId('history-list')).toBeInTheDocument();
+
+      // first tap: button switches to confirm state
+      const clearBtn = screen.getByRole('button', { name: /^clear history$/i });
+      await userEvent.click(clearBtn);
+      const confirmBtn = screen.getByRole('button', { name: /confirm clear history/i });
+      expect(confirmBtn).toHaveTextContent('Clear history?');
+      // history still present after first tap
+      expect(screen.getByTestId('history-list')).toBeInTheDocument();
+
+      // second tap: history disappears
+      await userEvent.click(confirmBtn);
+      expect(screen.queryByTestId('history-list')).not.toBeInTheDocument();
+    });
+
+    test('history persists across remounts via localStorage', async () => {
+      const { unmount } = render(<TapeCalc />);
+      await userEvent.click(screen.getByRole('button', { name: '4' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+      expect(screen.getByRole('button', { name: 'recall 5' })).toBeInTheDocument();
+
+      // Verify localStorage was written
+      const stored = window.localStorage.getItem('tapecalc.history.v1');
+      expect(stored).not.toBeNull();
+      const parsed = JSON.parse(stored);
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].result).toBe('5');
+
+      // Remount and expect the entry to be restored
+      unmount();
+      render(<TapeCalc />);
+      expect(screen.getByRole('button', { name: 'recall 5' })).toBeInTheDocument();
     });
 
     test('ft-in shows feet-inches form with fractional inches', async () => {
