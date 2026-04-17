@@ -387,15 +387,21 @@ export default function TapeCalc() {
 
   const handleOp = (newOp) => {
     haptic();
-    setError(null);
 
     if (phase === 'result') {
+      if (error) {
+        clearAll();
+        return;
+      }
+      setError(null);
       setOperandA(resultText);
       setPendingOp(newOp);
       setInput('');
       setPhase('operator');
       return;
     }
+
+    setError(null);
 
     if (phase === 'operator') {
       setPendingOp(newOp);

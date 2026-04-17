@@ -194,4 +194,30 @@ describe('TapeCalc UI', () => {
 
     expect(screen.getByTestId('display-value')).toHaveTextContent('Division by zero');
   });
+
+  test('operator after error resets instead of carrying empty operand', async () => {
+    render(<TapeCalc />);
+
+    // Trigger an error: 5 / 0 =
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    await userEvent.click(screen.getByRole('button', { name: /divide/i }));
+    await userEvent.click(screen.getByRole('button', { name: '0' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+    expect(screen.getByTestId('display-value')).toHaveTextContent('Division by zero');
+
+    // Tap an operator — should clearAll, NOT store an empty operandA
+    await userEvent.click(screen.getByRole('button', { name: /add/i }));
+    expect(screen.getByTestId('display-value')).toHaveTextContent('0');
+    expect(screen.getByTestId('expression-tape').textContent).toBe('');
+
+    // No operator should be pending
+    expect(screen.getByRole('button', { name: /add/i })).toHaveAttribute('aria-pressed', 'false');
+
+    // A fresh calculation must work end-to-end
+    await userEvent.click(screen.getByRole('button', { name: '3' }));
+    await userEvent.click(screen.getByRole('button', { name: /add/i }));
+    await userEvent.click(screen.getByRole('button', { name: '4' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+    expect(screen.getByLabelText('result')).toHaveTextContent('7');
+  });
 });
