@@ -79,3 +79,34 @@ export function parseLength(input) {
 
   return feet.mul(12).add(inches);
 }
+
+// Format a Fraction of inches for display. Rounds the total to the
+// nearest 1/16" before splitting into feet and inches, so boundaries
+// like 11 16/16" become 1' 0" rather than 0' 12".
+//
+//   'in'    → mixed inches, no unit marker ("10 1/2")
+//   'ft-in' → feet and inches, marked ("12' 3 1/2\"")
+//   'auto'  → ft-in when |value| >= 12", else inches
+export function formatLength(fraction, options = {}) {
+  const { unit = 'in' } = options;
+
+  const value = new Fraction(fraction);
+  const sign = value.valueOf() < 0 ? '-' : '';
+  const k = Math.round(16 * Math.abs(value.valueOf())); // total sixteenths
+  const rounded = new Fraction(k, 16);
+
+  const useFtIn = unit === 'ft-in' || (unit === 'auto' && k >= 192);
+
+  if (useFtIn) {
+    const feet = Math.floor(k / 192);
+    const remSixteenths = k - feet * 192;
+    const inches = new Fraction(remSixteenths, 16);
+    if (feet === 0 && remSixteenths === 0) return `${sign}0"`;
+    if (feet === 0) return `${sign}${inches.toFraction(true)}"`;
+    if (remSixteenths === 0) return `${sign}${feet}'`;
+    return `${sign}${feet}' ${inches.toFraction(true)}"`;
+  }
+
+  return `${sign}${rounded.toFraction(true)}`;
+}
+

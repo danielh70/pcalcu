@@ -1,4 +1,4 @@
-import { parseLength, computeTapeOperation, closestTapeMeasure } from './TapeCalc';
+import { parseLength, computeTapeOperation, closestTapeMeasure, formatLength } from './TapeCalc';
 import Fraction from 'fraction.js';
 
 describe('TapeCalc helpers', () => {
@@ -74,6 +74,12 @@ describe('TapeCalc helpers', () => {
       expect(V('10')).toBe(10);
     });
 
+    test('round-trips: parseLength then formatLength ft-in', () => {
+      expect(formatLength(parseLength("12' 3 1/2\""), { unit: 'ft-in' })).toBe("12' 3 1/2\"");
+      expect(formatLength(parseLength("12'"), { unit: 'ft-in' })).toBe("12'");
+      expect(formatLength(parseLength('3-1/2"'), { unit: 'ft-in' })).toBe('3 1/2"');
+    });
+
     test('malformed inputs throw', () => {
       expect(() => parseLength("'")).toThrow(/Invalid length/);
       expect(() => parseLength("'5")).toThrow(/Invalid length/);
@@ -84,6 +90,45 @@ describe('TapeCalc helpers', () => {
       expect(() => parseLength("12''")).toThrow(/Invalid length/);
       expect(() => parseLength("3\"'")).toThrow(/Invalid length/);
       expect(() => parseLength('12"3"')).toThrow(/Invalid length/);
+    });
+  });
+
+  describe('formatLength', () => {
+    test("unit 'in' matches existing mixed-number display", () => {
+      expect(formatLength(new Fraction(10.5))).toBe('10 1/2');
+      expect(formatLength(new Fraction(10), { unit: 'in' })).toBe('10');
+      expect(formatLength(new Fraction(1, 2), { unit: 'in' })).toBe('1/2');
+      expect(formatLength(new Fraction(0), { unit: 'in' })).toBe('0');
+    });
+
+    test("unit 'in' rounds to nearest 1/16", () => {
+      // 10 + 1/32 rounds to 10 1/16
+      expect(formatLength(new Fraction(321, 32), { unit: 'in' })).toBe('10 1/16');
+    });
+
+    test("unit 'ft-in' formats feet and inches", () => {
+      expect(formatLength(new Fraction(147.5), { unit: 'ft-in' })).toBe("12' 3 1/2\"");
+      expect(formatLength(new Fraction(144), { unit: 'ft-in' })).toBe("12'");
+      expect(formatLength(new Fraction(10.5), { unit: 'ft-in' })).toBe('10 1/2"');
+      expect(formatLength(new Fraction(0), { unit: 'ft-in' })).toBe('0"');
+    });
+
+    test("unit 'ft-in' rounds total first so 11 15.5/16 becomes 1'", () => {
+      // 11.96875 = 191.5/16 → rounds to 192/16 = 12" → 1'
+      expect(formatLength(new Fraction(3831, 320), { unit: 'ft-in' })).toBe("1'");
+    });
+
+    test("unit 'auto' switches at 12\"", () => {
+      expect(formatLength(new Fraction(11.9375), { unit: 'auto' })).toBe('11 15/16');
+      expect(formatLength(new Fraction(12), { unit: 'auto' })).toBe("1'");
+      expect(formatLength(new Fraction(144), { unit: 'auto' })).toBe("12'");
+      expect(formatLength(new Fraction(0), { unit: 'auto' })).toBe('0');
+    });
+
+    test('negative values are prefixed with -', () => {
+      expect(formatLength(new Fraction(-147.5), { unit: 'ft-in' })).toBe("-12' 3 1/2\"");
+      expect(formatLength(new Fraction(-10.5), { unit: 'in' })).toBe('-10 1/2');
+      expect(formatLength(new Fraction(-1, 2), { unit: 'auto' })).toBe('-1/2');
     });
   });
 });

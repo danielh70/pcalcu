@@ -1,5 +1,5 @@
 import React from 'react';
-import { closestSixteenth, parseLength } from '../utils/measure';
+import { closestSixteenth, parseLength, formatLength } from '../utils/measure';
 
 /* ═══════════════════════════════════════════════════════════════
    Exported calculation logic — unchanged
@@ -9,7 +9,7 @@ export function closestTapeMeasure(value) {
   return closestSixteenth(value);
 }
 
-export { parseLength };
+export { parseLength, formatLength };
 
 export function computeTapeOperation(aFraction, bFraction, op) {
   if (!(aFraction && typeof aFraction.valueOf === 'function'))
