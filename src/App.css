@@ -58,7 +58,12 @@
   }
 }
 
-/* ── TapeCalc card overrides — TapeCalc renders its own shell, strip chrome ── */
+/* ── TapeCalc card overrides — TapeCalc renders its own shell, strip chrome ──
+   The card is viewport-locked (height, not min-height): the history tape
+   scrolls internally and the keypad stays pinned, so this tab never causes
+   page-level scrolling. dvh line wins where supported; vh is the fallback.
+   Breakpoints use 599.98/600 to match MUI's sm breakpoint exactly (the theme
+   switches the Toolbar to 64px at min-width: 600px). */
 .tab-content-card--tapecalc {
   max-width: 480px;
   padding: 0;
@@ -68,7 +73,37 @@
   border-radius: 14px;
 }
 
-@media (max-width: 600px) {
+@media (min-width: 600px) {
+  .tab-content-card--tapecalc {
+    /* 258px chrome = AppBar (64 toolbar + 1 border) + .App padding (16 + 28)
+       + Tabs 53 + panel padding (24 + 24) + card margins (16 + 32) */
+    height: calc(100vh - 258px);
+    height: calc(100dvh - 258px);
+    min-height: 530px;  /* below this the keypad floors don't fit; page may scroll */
+    max-height: 780px;  /* don't stretch into a wall of keys on tall monitors */
+  }
+}
+
+/* Very short + wide viewports (phone landscape): strip the desktop chrome
+   and pin the card to the remaining height; .tc-calc scrolls internally
+   (see TapeCalc.css) so the page itself stays locked. Pairs with the
+   max-height padding override on the TapeCalc TabPanel in App.js and the
+   .App padding removal below. */
+@media (min-width: 600px) and (max-height: 520px) {
+  .tab-content-card--tapecalc {
+    margin: 8px auto;
+    /* 134px = AppBar 65 + Tabs 53 + card margins 16 */
+    height: calc(100vh - 134px);
+    height: calc(100dvh - 134px);
+    min-height: 0;
+    max-height: none;
+  }
+}
+@media (max-height: 520px) {
+  .App:has(.tab-content-card--tapecalc) { padding: 0; }
+}
+
+@media (max-width: 599.98px) {
   .tab-content-card--tapecalc {
     padding: 0;
     margin: 0;
@@ -77,7 +112,9 @@
     border-radius: 0;
     border: none;
     box-shadow: none;
-    min-height: calc(100vh - 105px);
+    /* 110px chrome = AppBar (56 toolbar + 1 border) + Tabs (52 tabs + 1 border) */
+    height: calc(100vh - 110px);
+    height: calc(100dvh - 110px);
     display: flex;
     flex-direction: column;
   }

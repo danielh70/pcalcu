@@ -320,6 +320,7 @@ export default function TapeCalc() {
   const [displayUnit, setDisplayUnit] = React.useState('in');
   const [confirmClear, setConfirmClear] = React.useState(false);
   const confirmTimerRef = React.useRef(null);
+  const historyScrollRef = React.useRef(null);
 
   const run = React.useCallback((action) => { haptic(); dispatch(action); }, []);
 
@@ -335,6 +336,13 @@ export default function TapeCalc() {
   React.useEffect(() => () => {
     if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
   }, []);
+
+  // Tape renders oldest→newest, so keep the scroller pinned to the bottom
+  // whenever an entry is added (or restored from localStorage).
+  React.useEffect(() => {
+    const el = historyScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [history]);
 
   const handleClearHistory = () => {
     haptic();
@@ -413,40 +421,46 @@ export default function TapeCalc() {
 
   return (
     <div className="tc-calc">
-      {/* ── history ── */}
-      {history.length > 0 && (
-        <div className="tc-history-wrap">
-          <div className="tc-history-header">
-            <button
-              className={`tc-history-clear${confirmClear ? ' tc-history-clear--confirm' : ''}`}
-              aria-label={confirmClear ? 'confirm clear history' : 'clear history'}
-              onClick={handleClearHistory}
-            >
-              {confirmClear ? 'Clear history?' : 'Clear'}
-            </button>
-          </div>
-          <div className="tc-history" data-testid="history-list">
-            {history.map((entry, idx) => (
+      {/* ── history tape ──
+          The wrap always renders so it can act as the flexible region of
+          the viewport-locked layout (keypad stays pinned even with no
+          entries). State is stored newest-first; the tape displays
+          oldest→newest so the latest entry sits beside the display. */}
+      <div className="tc-history-wrap">
+        {history.length > 0 && (
+          <>
+            <div className="tc-history-header">
               <button
-                key={`${entry.timestamp}-${idx}`}
-                className="tc-history-row"
-                aria-label={`recall ${entry.result}`}
-                onClick={() => run({
-                  type: ACTIONS.RECALL,
-                  display: entry.result,
-                  raw: entry.resultRaw,
-                })}
+                className={`tc-history-clear${confirmClear ? ' tc-history-clear--confirm' : ''}`}
+                aria-label={confirmClear ? 'confirm clear history' : 'clear history'}
+                onClick={handleClearHistory}
               >
-                <span className="tc-history-expr">
-                  {entry.a} {OP_SYMBOLS[entry.op]} {entry.b}
-                </span>
-                <span className="tc-history-expr">=</span>
-                <span className="tc-history-result">{entry.result}</span>
+                {confirmClear ? 'Clear history?' : 'Clear'}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+            <div className="tc-history" data-testid="history-list" ref={historyScrollRef}>
+              {[...history].reverse().map((entry, idx) => (
+                <button
+                  key={`${entry.timestamp}-${idx}`}
+                  className="tc-history-row"
+                  aria-label={`recall ${entry.result}`}
+                  onClick={() => run({
+                    type: ACTIONS.RECALL,
+                    display: entry.result,
+                    raw: entry.resultRaw,
+                  })}
+                >
+                  <span className="tc-history-expr">
+                    {entry.a} {OP_SYMBOLS[entry.op]} {entry.b}
+                  </span>
+                  <span className="tc-history-expr">=</span>
+                  <span className="tc-history-result">{entry.result}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ── display ── */}
       <div className="tc-display">

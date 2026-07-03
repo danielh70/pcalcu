@@ -9,7 +9,7 @@ import Systems from './components/Systems';
 
 import './App.css';
 
-function TabPanel({ children, value, index, ...other }) {
+function TabPanel({ children, value, index, sx, ...other }) {
   return (
     <div
       role='tabpanel'
@@ -18,7 +18,7 @@ function TabPanel({ children, value, index, ...other }) {
       aria-labelledby={`tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: { xs: 1, sm: 3 } }}>{children}</Box>}
+      {value === index && <Box sx={sx ?? { p: { xs: 1, sm: 3 } }}>{children}</Box>}
     </div>
   );
 }
@@ -30,7 +30,10 @@ export default function App() {
   return (
     <>
       <TopNav />
-      <main className='App' style={{ minHeight: '100vh' }}>
+      {/* No min-height here: the page background is owned by CssBaseline/body,
+          and forcing 100vh made the TapeCalc tab (header + locked card) always
+          overflow the viewport by the header height. */}
+      <main className='App'>
         <Tabs
           value={value}
           onChange={handleChange}
@@ -46,7 +49,13 @@ export default function App() {
             <PostLevel />
           </div>
         </TabPanel> */}
-        <TabPanel value={value} index={0}>
+        {/* TapeCalc is viewport-locked: no panel padding on phones so the
+            card can size itself to exactly the space below the tabs. */}
+        <TabPanel
+          value={value}
+          index={0}
+          sx={{ p: { xs: 0, sm: 3 }, '@media (max-height: 520px)': { p: 0 } }}
+        >
           <div className='tab-content-card tab-content-card--tapecalc'>
             <TapeCalc />
           </div>

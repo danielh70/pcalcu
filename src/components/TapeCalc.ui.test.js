@@ -437,6 +437,25 @@ describe('TapeCalc UI', () => {
       expect(screen.getByLabelText('result')).toHaveTextContent('30');
     });
 
+    test('history tape renders oldest first with the newest entry last', async () => {
+      render(<TapeCalc />);
+      // 1 + 1 = 2
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+      // 3 + 4 = 7 (digit after result starts fresh)
+      await userEvent.click(screen.getByRole('button', { name: '3' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '4' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+      const rows = screen.getAllByRole('button', { name: /^recall/ });
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toHaveAccessibleName('recall 2');
+      expect(rows[1]).toHaveAccessibleName('recall 7');
+    });
+
     test('clear-history button requires two taps', async () => {
       render(<TapeCalc />);
       // produce one history entry

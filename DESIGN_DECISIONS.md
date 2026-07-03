@@ -54,3 +54,25 @@ One line per decision. Running log in execution order.
 ## Task E — TapeCalc orange alignment
 
 - **Two colour swaps** in `TapeCalc.css`: `#f5a623` → `#F57C00` (operator text + pressed background), `#d4891a` → `#D96C00` (pressed-active darker state). Preserves the same light/dark relationship; nothing else in TapeCalc touched.
+
+## Task F — TapeCalc viewport-locked layout
+
+- **Lock mechanism**: card gets `height` (not `min-height`) = `100dvh` minus fixed chrome, with a `100vh` fallback line above it. Mobile chrome = 110px (AppBar 56 toolbar + 1 border = 57, Tabs 52 + 1 border = 53 — measured in-browser; `min-height: 52` doesn't absorb the border when the Tab items are exactly 52); desktop = 258px (adds .App/panel paddings + card margins). Numbers are safe because the theme pins Toolbar/Tabs heights explicitly. Verified pixel-exact via Playwright: body scrollHeight == innerHeight at 390×844 and 1280×900.
+- **Breakpoint alignment**: the new height rules use `599.98px / 600px` instead of the file's legacy `600/601` split so they flip exactly where MUI's `sm` breakpoint bumps the Toolbar to 64px — at precisely 600px wide the old split would have been 8px off.
+- **Removed `minHeight: 100vh` from `<main>`**: body background is owned by CssBaseline, and TopNav sits *outside* main, so 100vh on main guaranteed ~57px of page scroll on every tab — part of the original bug.
+- **Flex order**: history tape (`flex: 1 1 84px`, scrolls internally) → display (`flex-shrink: 0`) → keypad (`flex-shrink: 0`, pinned). The tape wrap now renders even when empty so the keypad stays pinned to the bottom.
+- **History min-height is a flex-basis, not a hard min**: spec asked for "~2 entries min", but a hard 84px min plus the 44px key floors clips the = key on short viewports (iPhone SE with Safari chrome ≈ 553px tall). `flex: 1 1 84px; min-height: 0` prefers ~2 rows and yields gracefully — the tape stays usable because it scrolls.
+- **Tape direction flipped to oldest→newest** (newest at bottom, adjacent to the display) — matches the adding-machine tape metaphor; short tapes bottom-anchor via `margin-top: auto`. Auto-scroll pins to bottom via a `useEffect` on `history`. Storage stays newest-first (reducer/localStorage/tests untouched); only the render reverses.
+- **Key compression**: `min-height: clamp(floor, Xdvh, cap)` with a vh fallback line — num/action/FRAC 44→70px @7.5dvh, operators 44→54px @7dvh, equals 44→58px @7.5dvh, quick-fracs 40→50px @6.5dvh. Floors: 44px primary / 40px secondary per spec.
+- **Extreme-short escape hatch**: below 520px viewport height (phone landscape) even the floors can't fit, so `.tc-calc` gets `overflow-y: auto` — the *tab* scrolls internally; the page stays locked. The display also compresses (min 80→56px) below 620px.
+- **Landscape phones are width-desktop, height-tiny**: an 844×390 phone hits the `min-width: 600` branch, whose 530px card floor forced page scroll. Added `(min-width: 600px) and (max-height: 520px)`: strip .App/panel padding (scoped via `.App:has(.tab-content-card--tapecalc)` + an sx max-height override on the TabPanel), pin the card to `100dvh − 134px`, and let the internal scroll take over. Verified: page locked, = reachable by scrolling inside the calc.
+- **Desktop card**: locked between `min-height: 530px` (below that the content floor doesn't fit and the page may scroll) and `max-height: 780px` (above that keys grow comically on tall monitors).
+- **= disabled state**: replaced `opacity: .35` (blended to ~2.1:1 against the keypad — the flagged illegibility was real) with explicit `#9e9e9e` on `#3f3f43` ≈ 3.9:1 — passes WCAG large-text 3:1 while still reading as muted. Only `=` ever disables; no other keypad key has a disabled state.
+- **Safe-area padding moved** from `.tc-calc` to `.tc-keypad` as `calc(6px + env(safe-area-inset-bottom))` (8px desktop), and mirrored on the FRAC overlay so its buttons don't extend into the home-indicator zone.
+- **100vh audit**: the only remaining `100vh` usages are the intentional fallback lines directly above their `100dvh` counterparts.
+- **Flagged, not fixed (out of scope)**:
+  - `.tc-eq` teal `#2a7c8c` and the steel-blue `#3a4a5c`/`#a8c4e0` quick/FRAC keys predate the orange rebrand — TapeCalc's accents are still off-palette.
+  - `#ff3b30` (iOS system red) on `.tc-clear`, `.tc-main--error`, confirm-clear — not the theme error `#E53935`.
+  - `Frame.js` and the `.frame` block in App.css are dead while PostLevel is commented out; `src/logo.svg` is an unused CRA leftover.
+  - `fraction.js` is imported in 4 files but not declared in package.json (only `fraction@0.2.0` is, which nothing imports) — it resolves via a transitive install today; fragile.
+  - Pre-existing test failure (also fails on clean HEAD): `Systems.test.js` › "uses alternate branch when landing on a spindle" (expected `1 3/8`, got `3 9/16`).
