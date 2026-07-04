@@ -4,10 +4,17 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+// TEMPORARILY DISABLED — measured-diagonal deviation feature (imports below
+// only served the deviation UI; re-enable together with it).
+// import Divider from '@mui/material/Divider';
+// import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTheme } from '@mui/material/styles';
 import { closestSixteenth, parseLength, formatLength } from '../utils/measure';
+
+// Length fields opt out of the phone keyboard's text mangling: smart
+// punctuation is also normalized in parseLength, but suppressing
+// autocorrect/capitalization avoids the visible rewrite while typing.
+const LENGTH_INPUT_PROPS = { autoCorrect: 'off', autoCapitalize: 'none', spellCheck: false };
 
 // Target diagonal in inches, rounded to the nearest 1/16", as a Fraction.
 function diagonalSixteenths(legAInput, legBInput) {
@@ -27,6 +34,10 @@ export function computeSquareDiagonal(legAInput, legBInput) {
 }
 
 /**
+ * TEMPORARILY DISABLED — the measured-diagonal UI that consumed this is
+ * commented out below; the function stays exported so it (and its skipped
+ * tests) can be re-enabled without a rewrite.
+ *
  * Compare a measured diagonal against the 1/16"-rounded target.
  * The comparison is against the rounded target (not the exact root) so a
  * tape reading that matches the displayed target always reports square.
@@ -56,7 +67,7 @@ function TriangleDiagram() {
       component="svg"
       viewBox="0 0 200 116"
       aria-hidden="true"
-      sx={{ width: 170, height: 'auto', display: 'block', mx: 'auto' }}
+      sx={{ width: 190, height: 'auto', display: 'block', mx: 'auto' }}
     >
       <polyline points="24,14 24,94 182,94" fill="none" stroke={leg} strokeWidth="2" />
       <line x1="24" y1="14" x2="182" y2="94" stroke={diagonal} strokeWidth="2.5" />
@@ -81,11 +92,13 @@ function fieldError(value) {
 export default function SquareCheck() {
   const [legA, setLegA] = React.useState('');
   const [legB, setLegB] = React.useState('');
-  const [measured, setMeasured] = React.useState('');
+  // TEMPORARILY DISABLED — measured-diagonal deviation feature.
+  // const [measured, setMeasured] = React.useState('');
 
   const legAError = fieldError(legA);
   const legBError = fieldError(legB);
-  const measuredError = fieldError(measured);
+  // TEMPORARILY DISABLED — measured-diagonal deviation feature.
+  // const measuredError = fieldError(measured);
 
   const legsReady = legA.trim() && legB.trim() && !legAError && !legBError;
 
@@ -98,6 +111,7 @@ export default function SquareCheck() {
     }
   }, [legsReady, legA, legB]);
 
+  /* TEMPORARILY DISABLED — measured-diagonal deviation feature.
   const check = React.useMemo(() => {
     if (!target || !measured.trim() || measuredError) return null;
     try {
@@ -106,11 +120,13 @@ export default function SquareCheck() {
       return null;
     }
   }, [target, legA, legB, measured, measuredError]);
+  */
 
   const handleReset = () => {
     setLegA('');
     setLegB('');
-    setMeasured('');
+    // TEMPORARILY DISABLED — measured-diagonal deviation feature.
+    // setMeasured('');
   };
 
   return (
@@ -121,7 +137,7 @@ export default function SquareCheck() {
         mx: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2.5,
+        gap: 3,
       }}
     >
       {/* ── section heading ── */}
@@ -144,6 +160,7 @@ export default function SquareCheck() {
           error={!!legAError}
           fullWidth
           autoComplete="off"
+          inputProps={LENGTH_INPUT_PROPS}
         />
         <TextField
           id="square-check-leg-b"
@@ -156,6 +173,7 @@ export default function SquareCheck() {
           error={!!legBError}
           fullWidth
           autoComplete="off"
+          inputProps={LENGTH_INPUT_PROPS}
         />
       </Stack>
 
@@ -176,9 +194,12 @@ export default function SquareCheck() {
         </Typography>
       </Stack>
 
+      {/* TEMPORARILY DISABLED — measured-diagonal deviation feature.
+          Re-enable this block (plus the state, memo, imports, and
+          checkSquare tests) to restore the square/deviation readout.
+
       <Divider />
 
-      {/* ── optional measured diagonal ── */}
       <TextField
         id="square-check-measured"
         label="Measured Diagonal"
@@ -190,9 +211,9 @@ export default function SquareCheck() {
         error={!!measuredError}
         fullWidth
         autoComplete="off"
+        inputProps={LENGTH_INPUT_PROPS}
       />
 
-      {/* ── deviation readout ── */}
       {check &&
         (check.status === 'square' ? (
           <Stack direction="row" spacing={1} alignItems="center">
@@ -212,6 +233,7 @@ export default function SquareCheck() {
             {`${check.deviation}" too ${check.status}`}
           </Typography>
         ))}
+      */}
 
       <Button
         variant="text"

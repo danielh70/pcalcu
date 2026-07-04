@@ -32,6 +32,19 @@ BROWSER=none PORT=3000 npx react-scripts start   # run in background; ready when
 
 ## Gotchas
 
+- Key screenshots taken immediately after a tap catch the 60ms background
+  transition (a disabled `=` can look orange for one frame) — wait ~100ms or
+  read computed styles before calling it a bug. Same for the FRAC overlay's
+  150ms fade.
+- TapeCalc key selectors: `getByRole('button', { name: 'fractions', exact: true })`
+  (plain `fractions` also matches "close fractions"); ops by name
+  `divide|multiply|subtract|add`; equals = `calculate`; unit chip =
+  `cycle display unit`.
+- The viewport lock depends on tab labels staying on ONE line (theme pins
+  Tabs to 52px + 1px border) — if a new tab label wraps at 390px, the
+  TapeCalc card overflows and the page scrolls. Assert the lock after any
+  tab/nav change.
+
 - Console 403 for `https://kit.fontawesome.com/88d11f9c92.js` on every load —
   pre-existing (index.html), ignore.
 - Pre-existing red test: `Systems.test.js › uses alternate branch when landing

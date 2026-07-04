@@ -1,6 +1,21 @@
 export const OP_SYMBOLS = { divide: '\u00f7', add: '+', subtract: '\u2212', multiply: '\u00d7' };
 export const OPS = ['divide', 'add', 'subtract', 'multiply'];
 
+/* Right-edge operator column, top \u2192 bottom. iOS-calculator order puts +
+   at the bottom, nearest the resting thumb \u2014 it's the most-used op. */
+export const OP_COLUMN = ['divide', 'multiply', 'subtract', 'add'];
+
+/* Digit grid, calculator convention (7-8-9 on top, like every desk and
+   phone calculator app \u2014 not phone-dial order). */
+export const DIGIT_ROWS = [
+  ['7', '8', '9'],
+  ['4', '5', '6'],
+  ['1', '2', '3'],
+];
+
+/* Labels for the unit chip beside the result readout. */
+export const UNIT_LABELS = { in: 'IN', 'ft-in': 'FT-IN', decimal: 'DEC' };
+
 /* every useful sixteenth in ascending order (simplified forms) */
 export const FRAC_GRID = [
   '1/16', '1/8',  '3/16', '1/4',

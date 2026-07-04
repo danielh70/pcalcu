@@ -130,6 +130,21 @@ describe('TapeCalc UI', () => {
     expect(addBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('operator highlight clears once the result is shown', async () => {
+    render(<TapeCalc />);
+
+    await userEvent.click(screen.getByRole('button', { name: '5' }));
+    const addBtn = screen.getByRole('button', { name: /add/i });
+    await userEvent.click(addBtn);
+    expect(addBtn).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(screen.getByRole('button', { name: '3' }));
+    await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+    // pendingOp is stale after EQUALS — the key must not stay lit
+    expect(addBtn).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('fraction appends to whole number', async () => {
     render(<TapeCalc />);
 
@@ -300,6 +315,14 @@ describe('TapeCalc UI', () => {
       expect(evt.defaultPrevented).toBe(true);
     });
 
+    test("' key inserts a foot mark", () => {
+      render(<TapeCalc />);
+      fireEvent.keyDown(window, { key: '1' });
+      fireEvent.keyDown(window, { key: '2' });
+      fireEvent.keyDown(window, { key: "'" });
+      expect(screen.getByTestId('display-value')).toHaveTextContent(/12'/);
+    });
+
     test('ignores IME composition events', () => {
       render(<TapeCalc />);
       const evt = createEvent.keyDown(window, { key: '1', isComposing: true });
@@ -386,6 +409,31 @@ describe('TapeCalc UI', () => {
       expect(result).toHaveTextContent('156');
     });
 
+    test('unit chip appears with the result and cycles units on tap', async () => {
+      render(<TapeCalc />);
+      // no chip while typing
+      expect(screen.queryByRole('button', { name: /cycle display unit/i })).not.toBeInTheDocument();
+
+      // 155 + 1 = 156
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: '5' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+      const chip = screen.getByRole('button', { name: /cycle display unit/i });
+      expect(chip).toHaveTextContent('IN');
+
+      await userEvent.click(chip);
+      expect(chip).toHaveTextContent('FT-IN');
+      expect(screen.getByLabelText('result')).toHaveTextContent("13'");
+
+      await userEvent.click(chip);
+      expect(chip).toHaveTextContent('DEC');
+      expect(screen.getByLabelText('result').textContent).toBe('156');
+    });
+
     test('tap during input phase does nothing', async () => {
       render(<TapeCalc />);
       await userEvent.click(screen.getByRole('button', { name: '5' }));
@@ -406,6 +454,18 @@ describe('TapeCalc UI', () => {
       expect(result).toHaveTextContent('Division by zero');
       await userEvent.click(result);
       expect(result).toHaveTextContent('Division by zero');
+    });
+
+    test('empty tape shows a hint that disappears after the first calculation', async () => {
+      render(<TapeCalc />);
+      expect(screen.getByText(/results land here/i)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /add/i }));
+      await userEvent.click(screen.getByRole('button', { name: '1' }));
+      await userEvent.click(screen.getByRole('button', { name: /calculate/i }));
+
+      expect(screen.queryByText(/results land here/i)).not.toBeInTheDocument();
     });
 
     test('history list appears after a calculation and tapping a row recalls the result', async () => {

@@ -80,6 +80,22 @@ describe('TapeCalc helpers', () => {
       expect(V("12' 3 1/2")).toBeCloseTo(147.5);
     });
 
+    test('iOS smart punctuation: curly quotes and primes parse as feet/inches', () => {
+      expect(V('8’')).toBe(96); // U+2019 right single quote (iOS ' key)
+      expect(V('8‘')).toBe(96); // U+2018 left single quote
+      expect(V('8′')).toBe(96); // U+2032 prime
+      expect(V('3”')).toBe(3); // U+201D right double quote (iOS " key)
+      expect(V('3“')).toBe(3); // U+201C left double quote
+      expect(V('3″')).toBe(3); // U+2033 double prime
+      expect(V('6’ 3 1/2”')).toBeCloseTo(75.5);
+      expect(V('12’3-1/2″')).toBeCloseTo(147.5);
+    });
+
+    test('smart punctuation stays malformed where straight quotes would be', () => {
+      expect(() => parseLength('12’’')).toThrow(/Invalid length/);
+      expect(() => parseLength('’5')).toThrow(/Invalid length/);
+    });
+
     test('bare inputs remain unchanged', () => {
       expect(V('10 1/2')).toBeCloseTo(10.5);
       expect(V('1/2')).toBeCloseTo(0.5);

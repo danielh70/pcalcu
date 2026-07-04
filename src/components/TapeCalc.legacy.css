@@ -1,0 +1,338 @@
+/* ════════════════════════════════════════════════════════════════
+   TEMPORARILY DISABLED — previous TapeCalc skin (pre mobile-first
+   redesign, see DESIGN_DECISIONS.md Task H3). Not imported anywhere,
+   excluded from the bundle; kept verbatim for rollback. CSS comments
+   cannot nest, so this lives as a file instead of a comment block.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── history tape ──
+   The tape takes all spare vertical space (flex-grow) and scrolls
+   internally. Basis ~2 entries; on short viewports it yields (shrinks)
+   before the fixed display/keypad ever clip — the tape stays usable
+   because it scrolls. */
+.tc-history-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 84px;
+  min-height: 0;
+  background: #141416;
+  border-bottom: 1px solid #2d2d30;
+}
+.tc-history-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  border-bottom: 1px solid #23232a;
+  flex-shrink: 0;
+}
+.tc-history-clear {
+  border: none;
+  background: transparent;
+  color: #888;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: .7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tc-history-clear:active { background: #23232a; }
+.tc-history-clear--confirm { color: #ff3b30; }
+.tc-history {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  /* bottom-anchor short tapes so the newest entry sits next to the display */
+  margin-top: auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.tc-history-row {
+  flex-shrink: 0; /* rows must not compress inside the scroller */
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: .5em;
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: .75rem;
+  text-align: right;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  width: 100%;
+}
+.tc-history-row:active { background: #23232a; }
+.tc-history-expr { color: #888; }
+.tc-history-result { color: #f5f5f5; font-weight: 600; }
+
+/* ── calculator shell ──
+   Fills the viewport-locked card (see .tab-content-card--tapecalc in
+   App.css). Order: history tape (grows, scrolls) → display (fixed) →
+   keypad (fixed, pinned to the bottom edge). Safe-area padding lives on
+   the keypad, not here. */
+.tc-calc {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1c1c1e;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (max-width: 599.98px) {
+  .tc-calc { border-radius: 0; }
+}
+/* Extreme-short viewports (phone landscape): even the 44/40px key floors
+   cannot fit, so let the calc scroll internally rather than clip the
+   keypad. The page itself stays locked. */
+@media (max-height: 520px) {
+  .tc-calc { overflow-y: auto; }
+}
+
+/* ── display area — fixed height, never grows or scrolls away ── */
+.tc-display {
+  padding: 16px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 80px;
+  flex-shrink: 0;
+}
+@media (min-width: 601px) {
+  .tc-display { padding: 20px 20px 14px; min-height: 90px; }
+}
+@media (max-height: 620px) {
+  .tc-display { min-height: 56px; padding: 8px 16px 6px; }
+}
+
+.tc-expr {
+  font-size: .875rem;
+  color: #888;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  min-height: 1.25rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: right;
+}
+
+.tc-main {
+  font-weight: 700;
+  color: #f5f5f5;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: right;
+  min-height: 3rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  transform-origin: right bottom;
+  transition: transform 120ms ease;
+}
+.tc-main--error { color: #ff3b30; }
+
+/* ── keypad wrapper (positioned for overlay) ──
+   Fixed height (key clamps decide it), pinned to the card bottom.
+   safe-area padding keeps the = button clear of the iPhone home
+   indicator — do not remove. */
+.tc-keypad {
+  position: relative;
+  flex-shrink: 0;
+  padding: 6px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  background: #2d2d30;
+}
+@media (min-width: 601px) {
+  .tc-keypad {
+    padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── normal keys panel ── */
+.tc-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: opacity 150ms ease;
+}
+.tc-keys--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── fraction selection panel (overlay) ── */
+.tc-frac-panel {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 5px;
+  padding: 6px;
+  /* overlay covers the keypad incl. its safe-area padding — mirror it */
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  background: #2d2d30;
+  transition: opacity 150ms ease;
+  z-index: 1;
+}
+.tc-frac-panel--hidden {
+  opacity: 0;
+  z-index: -1;
+}
+
+@media (min-width: 601px) {
+  .tc-keys { gap: 6px; }
+  .tc-frac-panel {
+    gap: 6px;
+    padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── grid row helpers ── */
+.tc-row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.tc-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.tc-row5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+@media (min-width: 601px) {
+  .tc-row4 { gap: 6px; }
+  .tc-row3 { gap: 6px; }
+  .tc-row5 { gap: 6px; }
+}
+
+/* ── quick-entry row (foot mark + permanent fractions) ── */
+.tc-quick {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .95rem;
+  font-weight: 600;
+  /* secondary key: compresses on short viewports, floor 40px */
+  min-height: clamp(40px, 6.5vh, 50px);
+  min-height: clamp(40px, 6.5dvh, 50px);
+}
+.tc-quick:active { background: #2e3e50; }
+
+/* ── button base ── */
+.tc-btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Roboto Mono', 'SF Mono', 'Menlo', monospace;
+  border-radius: 8px;
+  transition: background 60ms ease;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── number buttons (taller now that fraction rows are gone) ──
+   Primary keys scale with viewport height; floor 44px (gloved-hand /
+   Apple HIG target), cap 70px. */
+.tc-num {
+  background: #505055;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 500;
+  min-height: clamp(44px, 7.5vh, 70px);
+  min-height: clamp(44px, 7.5dvh, 70px);
+}
+.tc-num:active { background: #3a3a3e; }
+
+/* ── operator buttons ── */
+.tc-op {
+  background: #505055;
+  color: #F57C00;
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-height: clamp(44px, 7vh, 54px);
+  min-height: clamp(44px, 7dvh, 54px);
+}
+.tc-op:active { background: #3a3a3e; }
+.tc-op[aria-pressed="true"] {
+  background: #F57C00;
+  color: #fff;
+}
+.tc-op[aria-pressed="true"]:active {
+  background: #D96C00;
+}
+
+/* ── action buttons (C / backspace) ── */
+.tc-action {
+  background: #505055;
+  color: #aaa;
+  font-size: 1.15rem;
+  font-weight: 600;
+  min-height: clamp(44px, 7.5vh, 70px);
+  min-height: clamp(44px, 7.5dvh, 70px);
+}
+.tc-action:active { background: #3a3a3e; }
+.tc-clear { color: #ff3b30; }
+
+/* ── FRAC mode button (bottom row) ── */
+.tc-frac-btn {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  min-height: clamp(44px, 7.5vh, 70px);
+  min-height: clamp(44px, 7.5dvh, 70px);
+}
+.tc-frac-btn:active { background: #2e3e50; }
+
+/* ── fraction buttons inside the panel ── */
+.tc-frac {
+  background: #3a4a5c;
+  color: #a8c4e0;
+  font-size: .9rem;
+  font-weight: 600;
+}
+.tc-frac:active { background: #2e3e50; }
+
+/* ── close button inside fraction panel ── */
+.tc-frac-close {
+  background: #505055;
+  color: #ff3b30;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.tc-frac-close:active { background: #3a3a3e; }
+
+/* ── equals button ── */
+.tc-eq {
+  background: #2a7c8c;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  min-height: clamp(44px, 7.5vh, 58px);
+  min-height: clamp(44px, 7.5dvh, 58px);
+  width: 100%;
+}
+.tc-eq:active:not(:disabled) { background: #1e5f6b; }
+/* Explicit disabled colours instead of opacity: the old opacity .35 blended
+   to ~2.1:1 against the keypad surface (illegible). #9e9e9e on #3f3f43 is
+   ~3.9:1 — passes WCAG large-text (3:1) while still reading as muted. */
+.tc-eq:disabled { background: #3f3f43; color: #9e9e9e; cursor: default; }

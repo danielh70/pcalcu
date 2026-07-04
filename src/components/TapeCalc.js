@@ -3,13 +3,15 @@ import Fraction from 'fraction.js';
 import { closestSixteenth, parseLength, formatLength } from '../utils/measure';
 import {
   OP_SYMBOLS,
-  OPS,
+  OP_COLUMN,
+  DIGIT_ROWS,
   FRAC_GRID,
   QUICK_FRACS,
   ACTIONS,
   HISTORY_KEY,
   HISTORY_LIMIT,
   UNIT_CYCLE,
+  UNIT_LABELS,
 } from './TapeCalc.constants';
 import './TapeCalc.css';
 
@@ -386,6 +388,7 @@ export default function TapeCalc() {
       else if (k === '-') action = { type: ACTIONS.OP, op: 'subtract' };
       else if (k === '*') action = { type: ACTIONS.OP, op: 'multiply' };
       else if (k === '/') action = { type: ACTIONS.OP, op: 'divide' };
+      else if (k === "'") action = { type: ACTIONS.FOOT_MARK };
       else if (k === 'Enter' || k === '=') action = { type: ACTIONS.EQUALS };
       else if (k === 'Backspace') action = { type: ACTIONS.BACKSPACE };
       else if (k === 'Escape' || k === 'c' || k === 'C') action = { type: ACTIONS.CLEAR };
@@ -417,7 +420,13 @@ export default function TapeCalc() {
 
   const eqDisabled = phase !== 'input' || !pendingOp || !input;
   const mainLen = mainDisplay.length;
-  const mainScale = mainLen > 14 ? 0.56 : mainLen > 10 ? 0.72 : mainLen > 7 ? 0.88 : 1;
+  // Errors get a fixed smaller font via .tc-main--error instead of the
+  // length scale: scale() shrinks the already-clipped render (overflow
+  // clips before transform), which amputated long messages.
+  const isErrorDisplay = Boolean(error) && phase === 'result';
+  const mainScale = isErrorDisplay
+    ? 1
+    : mainLen > 14 ? 0.56 : mainLen > 10 ? 0.72 : mainLen > 7 ? 0.88 : 1;
 
   return (
     <div className="tc-calc">
@@ -427,6 +436,11 @@ export default function TapeCalc() {
           entries). State is stored newest-first; the tape displays
           oldest→newest so the latest entry sits beside the display. */}
       <div className="tc-history-wrap">
+        {history.length === 0 && (
+          <div className="tc-history-empty" aria-hidden="true">
+            Results land here — tap a line to reuse it
+          </div>
+        )}
         {history.length > 0 && (
           <>
             <div className="tc-history-header">
@@ -467,59 +481,48 @@ export default function TapeCalc() {
         <div className="tc-expr" data-testid="expression-tape">
           {expressionTape}
         </div>
-        <div
-          className={`tc-main${error && phase === 'result' ? ' tc-main--error' : ''}`}
-          data-testid="display-value"
-          aria-label="result"
-          role={canCycleUnit ? 'button' : undefined}
-          tabIndex={canCycleUnit ? 0 : undefined}
-          onClick={cycleUnit}
-          style={{
-            transform: `scale(${mainScale})`,
-            cursor: canCycleUnit ? 'pointer' : 'default',
-          }}
-        >
-          {mainDisplay}
+        <div className="tc-display-row">
+          {/* Unit chip: makes tap-to-cycle discoverable. Kept outside
+              .tc-main so the result's text content stays clean. */}
+          {canCycleUnit && (
+            <button
+              className="tc-unit-chip"
+              aria-label="cycle display unit"
+              onClick={cycleUnit}
+            >
+              {UNIT_LABELS[displayUnit] || 'IN'}
+            </button>
+          )}
+          <div
+            className={`tc-main${
+              phase === 'result' ? (error ? ' tc-main--error' : ' tc-main--result') : ''
+            }`}
+            data-testid="display-value"
+            aria-label="result"
+            role={canCycleUnit ? 'button' : undefined}
+            tabIndex={canCycleUnit ? 0 : undefined}
+            onClick={cycleUnit}
+            style={{
+              transform: `scale(${mainScale})`,
+              cursor: canCycleUnit ? 'pointer' : 'default',
+            }}
+          >
+            {mainDisplay}
+          </div>
         </div>
       </div>
 
       {/* ── keypad (positioned container for panel overlay) ── */}
       <div className="tc-keypad">
 
-        {/* ── normal keys ── */}
+        {/* ── normal keys ──
+            Layout (Task H3): quick strip on top, then a 4-column grid —
+            three digit columns (7-8-9 first, calculator convention) with
+            the operator column down the right edge (thumb zone), FRAC at
+            the bottom-left corner, and a C + wide-equals row pinned last. */}
         <div className={`tc-keys${showFracPanel ? ' tc-keys--hidden' : ''}`}>
-          {/* operators */}
-          <div className="tc-row4">
-            {OPS.map((key) => (
-              <button
-                key={key}
-                className="tc-btn tc-op"
-                aria-label={key}
-                aria-pressed={pendingOp === key}
-                onClick={() => run({ type: ACTIONS.OP, op: key })}
-              >
-                {OP_SYMBOLS[key]}
-              </button>
-            ))}
-          </div>
-
-          {/* number rows */}
-          {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, i) => (
-            <div key={i} className="tc-row3">
-              {row.map((d) => (
-                <button
-                  key={d}
-                  className="tc-btn tc-num"
-                  onClick={() => run({ type: ACTIONS.DIGIT, digit: d })}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-          ))}
-
-          {/* quick-entry row: foot mark + permanent fractions */}
-          <div className="tc-row5">
+          {/* quick-entry strip: foot mark + permanent fractions */}
+          <div className="tc-strip">
             <button
               className="tc-btn tc-quick"
               aria-label="foot mark"
@@ -539,21 +542,31 @@ export default function TapeCalc() {
             ))}
           </div>
 
-          {/* bottom row: C, 0, FRAC, ⌫ */}
-          <div className="tc-row4">
-            <button
-              className="tc-btn tc-action tc-clear"
-              aria-label="clear"
-              onClick={() => run({ type: ACTIONS.CLEAR })}
-            >
-              C
-            </button>
-            <button
-              className="tc-btn tc-num"
-              onClick={() => run({ type: ACTIONS.DIGIT, digit: '0' })}
-            >
-              0
-            </button>
+          {/* digit rows + right-edge operator column */}
+          <div className="tc-grid">
+            {DIGIT_ROWS.map((row, i) => (
+              <React.Fragment key={row[0]}>
+                {row.map((d) => (
+                  <button
+                    key={d}
+                    className="tc-btn tc-num"
+                    onClick={() => run({ type: ACTIONS.DIGIT, digit: d })}
+                  >
+                    {d}
+                  </button>
+                ))}
+                <button
+                  className="tc-btn tc-op"
+                  aria-label={OP_COLUMN[i]}
+                  aria-pressed={pendingOp === OP_COLUMN[i] && phase !== 'result'}
+                  onClick={() => run({ type: ACTIONS.OP, op: OP_COLUMN[i] })}
+                >
+                  {OP_SYMBOLS[OP_COLUMN[i]]}
+                </button>
+              </React.Fragment>
+            ))}
+
+            {/* bottom grid row: FRAC, 0, backspace, + */}
             <button
               className="tc-btn tc-frac-btn"
               aria-label="fractions"
@@ -562,23 +575,46 @@ export default function TapeCalc() {
               FRAC
             </button>
             <button
+              className="tc-btn tc-num"
+              onClick={() => run({ type: ACTIONS.DIGIT, digit: '0' })}
+            >
+              0
+            </button>
+            <button
               className="tc-btn tc-action"
               aria-label="backspace"
               onClick={() => run({ type: ACTIONS.BACKSPACE })}
             >
-              {'\u232b'}
+              {'⌫'}
+            </button>
+            <button
+              className="tc-btn tc-op"
+              aria-label={OP_COLUMN[3]}
+              aria-pressed={pendingOp === OP_COLUMN[3] && phase !== 'result'}
+              onClick={() => run({ type: ACTIONS.OP, op: OP_COLUMN[3] })}
+            >
+              {OP_SYMBOLS[OP_COLUMN[3]]}
             </button>
           </div>
 
-          {/* equals */}
-          <button
-            className="tc-btn tc-eq"
-            aria-label="calculate"
-            onClick={() => run({ type: ACTIONS.EQUALS })}
-            disabled={eqDisabled}
-          >
-            =
-          </button>
+          {/* bottom row: C + wide equals */}
+          <div className="tc-eqrow">
+            <button
+              className="tc-btn tc-clear"
+              aria-label="clear"
+              onClick={() => run({ type: ACTIONS.CLEAR })}
+            >
+              C
+            </button>
+            <button
+              className="tc-btn tc-eq"
+              aria-label="calculate"
+              onClick={() => run({ type: ACTIONS.EQUALS })}
+              disabled={eqDisabled}
+            >
+              =
+            </button>
+          </div>
         </div>
 
         {/* ── fraction selection panel (overlay) ── */}

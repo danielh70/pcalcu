@@ -90,3 +90,41 @@ One line per decision. Running log in execution order.
 - **Test filename**: spec suggested `SquareCheck_test.js`; repo convention is `*.test.js` (Systems.test.js, TapeCalc.test.js) and CRA's jest only picks up that pattern, so it's `SquareCheck.test.js`.
 - **Tab plumbing only in App.js**: new import + `<Tab>` + `<TabPanel index={2}>` in the standard `tab-content-card`; Systems, TapeCalc, and the commented-out PostLevel block untouched. Nothing needed disabling, so no TEMPORARILY DISABLED markers were added.
 - **Suite status**: 84 passed / 1 failed — the failure is the pre-existing Systems spindle-branch test documented in Task F, unaffected by this change.
+
+## Task H1 — iOS smart punctuation fix (measure.js)
+
+- **Fixed at the parser, not per-field**: `parseLength` normalizes ‘ ’ ′ → `'` and “ ” ″ → `"` before parsing, so every consumer (TapeCalc, Systems, Square Check, future) is covered at once. Unicode prime/double-prime included because they're the *semantically correct* feet/inch marks — some keyboards emit them deliberately.
+- **Normalization happens before validation**, so `12’’` still throws exactly like `12''` — smart quotes get no more leniency than straight ones (tested).
+- **Belt-and-suspenders on fields**: `autoCorrect="off" autoCapitalize="none" spellCheck={false}` added to the Square Check leg inputs via a shared `LENGTH_INPUT_PROPS`. NOT added to the Systems length field — Systems is off-limits per task rules; the parser-level fix covers it regardless.
+- **Tests live in TapeCalc.test.js** with the rest of the parseLength coverage (measure.js has no dedicated test file; parser tests have always ridden along there).
+
+## Task H2 — Square Check simplification
+
+- **Measured-diagonal + deviation UI disabled, not deleted**: state, memo, imports, and JSX are commented out with TEMPORARILY DISABLED markers; `checkSquare` stays exported (pure, harmless) so re-enabling is an uncomment, not a rewrite. Its tests are `describe.skip`/`test.skip` with the same marker.
+- **Added a live test** asserting the measured-diagonal input is NOT rendered — so the disabled state is itself pinned by a test.
+- **Spacing**: card gap 2.5 → 3 and diagram 170 → 190px wide so the shorter card doesn't feel hollow.
+
+## Task H3 — TapeCalc redesign (mobile-first overhaul)
+
+**Diagnosis of the old layout:** operators sat in a horizontal row at the *top* of the keypad — the single hardest one-thumb reach on a phone; every calculation forced a trip to the far corner. Six stacked key rows squeezed key heights. The skin was off-brand (Task F flagged it): iOS-gray `#505055` keys, steel-blue `#3a4a5c` fraction keys, teal `#2a7c8c` equals, iOS-red `#ff3b30`. Unit cycling (tap the result) was undiscoverable. The empty tape was a dead black band on first launch.
+
+**What was deliberately preserved** (validated, per spec): the reducer state machine and all ACTIONS, FRAC flip-panel paradigm, quick-frac strip membership (`'` `1/2` `1/4` `3/4` `1/8`), history tape with localStorage raw-fraction persistence, recall rows, two-tap clear-history, keyboard input, viewport-locked flex layout (tape grows/scrolls → display fixed → keypad pinned with safe-area), 44/40px floors, and the whole test contract (aria-labels, testids).
+
+- **Operator column, not operator row**: ÷ × − + now run down the right edge (iOS-calculator convention) where the right thumb rests. Digits go 7-8-9 top (desk/iOS calculator muscle memory, not phone-dial) in a 4-column grid: three digit columns + op column.
+- **Bottom-corner priorities**: FRAC moved to the bottom-left of the grid — it's the app's signature key and was buried mid-row; ⌫ sits next to 0. Final row is `[C][===== = =====]` — C gets a real key (error recovery) at the corner, = gets 3 columns of width at the absolute bottom where the thumb naturally lands, never below the fold.
+- **Fraction-family color**: everything fraction-related (quick fracs, FRAC key, overlay grid) wears a warm orange-tinted surface (`rgba(245,124,0,.12)` + `#FFB35C` text) replacing the off-palette steel blue — "fractions are the point" now reads at a glance, and it's derived from brand orange rather than a new hue.
+- **Orange = the answer, here too**: the main readout turns `#F57C00` in the result phase (white while typing, `#E53935` theme red on error — replacing iOS `#ff3b30` everywhere in the tab). `=` is the only filled-orange key (matches containedPrimary), so the eye path is *type → orange = → orange answer*.
+- **Unit chip**: a small bordered pill (IN / FT-IN / DEC) appears beside the result when cycling is available and taps through the same cycle — making the previously invisible tap-to-cycle featurediscoverable. It's a separate button so the result element's text (asserted by tests) stays clean.
+- **Tape empty state**: one muted line ("Results land here — tap a line to reuse it") replaces the dead black band and teaches recall for free.
+- **Keyboard**: added `'` → FOOT_MARK to the existing key map.
+- **Styling approach — considered and rejected bringing in Tailwind/styled-components**: a keypad is the one place raw CSS beats everything — no ripple/emotion overhead on rapid taps, trivial `clamp()` sizing, zero bundle cost. TapeCalc stays plain CSS; Systems/Square Check stay MUI; brand tokens are shared by value. No new dependency.
+- **Old skin preserved, not deleted**: nested `/* */` comments make commenting out a whole CSS file impossible, so the previous skin moved verbatim to `TapeCalc.legacy.css` (TEMPORARILY DISABLED header, not imported, excluded from the bundle) for rollback.
+- **Card background** in App.css aligned `#1c1c1e` → `#1A1A1A` (theme paper) — the last surface that wasn't on-palette.
+- **Geometry check** (390×844, chrome 110px → 734px card): utility strip clamp(40,6.5dvh,50) + 4 grid rows clamp(44,7.5dvh,70) + equals clamp(48,7.5dvh,58) + gaps/padding ≈ 360px keypad, display ≥ 80px, leaving ~290px of tape (~7 entries) — one row *more* tape than the old six-row keypad. Short-viewport escape hatches (max-height 520/620) carried over unchanged.
+
+**Found during Playwright verification (fixed):**
+
+- **Tab-label wrap broke the viewport lock**: with three tabs at 390px, "Square Check" wrapped to two lines, pushing the Tabs bar past the 53px the locked card subtracts → 14px of page scroll on the TapeCalc tab. Fix in theme.js `MuiTab`: side padding 16 → 10px + `whiteSpace: 'nowrap'`. Verified back to scrollHeight == innerHeight at 390×844 and 382/390 in landscape (calc scrolls internally there, = reachable).
+- **Stale operator highlight**: `pendingOp` survives EQUALS by design (reducer untouched), so `+` stayed filled-orange next to a finished result — much louder in the new skin than the old. `aria-pressed` now also requires `phase !== 'result'`; test added.
+- **Error message amputation**: "Division by zero" rendered as "ivision by zero" — `overflow: hidden` clips *before* `transform: scale()`, so the shrink-to-fit scale can't rescue text wider than the box (latent in the old skin too). Errors now skip the scale and get a fixed 1.375rem via `.tc-main--error`.
+- **Transient screenshot artifact, not a bug**: keys screenshotted immediately after a tap show the 60ms background transition (e.g. a still-orange disabled `=`); computed styles confirmed correct.

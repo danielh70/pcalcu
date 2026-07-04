@@ -68,7 +68,7 @@
   max-width: 480px;
   padding: 0;
   overflow: hidden;
-  background: #1c1c1e;
+  background: #1A1A1A; /* theme paper — was #1c1c1e, last off-palette surface */
   border: none;
   border-radius: 14px;
 }

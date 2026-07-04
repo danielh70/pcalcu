@@ -167,7 +167,12 @@ const theme = createTheme({
           fontSize: '0.9375rem',
           letterSpacing: 0,
           minHeight: 52,
-          padding: '14px 16px',
+          /* 10px side padding + nowrap: three tabs ("Square Check" is the
+             long one) must fit one line at 390px — a wrapped label makes
+             the Tabs bar taller than the 53px chrome the viewport-locked
+             TapeCalc card subtracts, forcing page scroll. */
+          padding: '14px 10px',
+          whiteSpace: 'nowrap',
           color: theme.palette.text.secondary,
           transition: 'color 120ms ease, background-color 120ms ease',
           '&:hover': {

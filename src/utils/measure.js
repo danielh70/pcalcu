@@ -23,18 +23,29 @@ function parseBareInches(s) {
   throw new Error('Invalid length');
 }
 
+// iOS smart punctuation substitutes typographic marks for the straight
+// quotes carpenters actually mean: ' becomes ’ (U+2019) and " becomes
+// “/” (U+201C/D). Unicode prime ′ (U+2032) / double prime ″ (U+2033) are
+// the semantically-correct feet/inch marks, so accept those too.
+const SMART_FEET_MARKS = /[‘’′]/g; // ‘ ’ ′ → '
+const SMART_INCH_MARKS = /[“”″]/g; // “ ” ″ → "
+
 /**
  * Parse a length string to a Fraction of inches.
  *
  * Accepts bare inches ("10", "1/2", "10 1/2") and feet-inches forms:
- * `12'`, `3"`, `12' 3"`, `12' 3 1/2"`, `12'3-1/2"`.
+ * `12'`, `3"`, `12' 3"`, `12' 3 1/2"`, `12'3-1/2"`. Curly quotes and
+ * primes are normalized to straight marks first (iOS smart punctuation).
  *
  * @param {string} input
  * @returns {Fraction} Fraction of inches.
  * @throws {Error} On empty or malformed input.
  */
 export function parseLength(input) {
-  const s = String(input ?? '').trim();
+  const s = String(input ?? '')
+    .replace(SMART_FEET_MARKS, "'")
+    .replace(SMART_INCH_MARKS, '"')
+    .trim();
   if (!s) throw new Error('Empty length');
 
   const hasFt = s.includes("'");
