@@ -76,3 +76,17 @@ One line per decision. Running log in execution order.
   - `Frame.js` and the `.frame` block in App.css are dead while PostLevel is commented out; `src/logo.svg` is an unused CRA leftover.
   - `fraction.js` is imported in 4 files but not declared in package.json (only `fraction@0.2.0` is, which nothing imports) — it resolves via a transitive install today; fragile.
   - Pre-existing test failure (also fails on clean HEAD): `Systems.test.js` › "uses alternate branch when landing on a spindle" (expected `1 3/8`, got `3 9/16`).
+
+## Task G — Square Check tab
+
+- **Parsing/formatting reused, not rewritten**: all input goes through `parseLength`, rounding through `closestSixteenth`, display through `formatLength(…, { unit: 'auto' })` — so `6' 3 1/2`, `20'`, `45 3/4` all work identically to the rest of the app, and diagonals ≥ 12" auto-display as feet + inches.
+- **Deviation compares against the *rounded* target, not the exact root**: the carpenter reads the displayed target (rounded to 1/16") off the screen and pulls a tape to it — if their measurement matches what the app told them, it must say "Square," not "1/16 off" because of sub-1/16 float dust. Tested explicitly with the 1-1-√2 case.
+- **Zero-length legs rejected**: `parseLength('0')` is valid input elsewhere, but a 0" leg makes a degenerate triangle, so the calc functions throw `Invalid length` and the field shows the standard error helper.
+- **Live calculation, no Go button**: three fields, pure derivation, nothing destructive — results update as you type (per-field validation errors only show once the field is non-empty). Kept the small centered text `Reset` from the Systems pattern.
+- **Legs side-by-side**: Leg A / Leg B share one row so target + measured stay above the fold on a 390×844 phone; measured diagonal gets its own full-width row since it's the longest value you'll type.
+- **Diagram**: single inline SVG (~10 elements), legs in `text.secondary`, diagonal C in `primary.main` — orange marks the answer, consistent with the rest of the app. `aria-hidden` since the labels A/B/C are decorative; the TextFields carry the real names.
+- **Square = MUI default `success.main` green + CheckCircle icon**; off-square deviation renders in `error.main` red (`5/16" too long`). Theme defines no success colour, so this leans on MUI's dark-mode default (#66bb6a) rather than adding a palette entry for one state.
+- **Deviation string is one template literal** (`` `${deviation}" too ${status}` ``), not JSX fragments — keeps it a single DOM text node so tests (and screen readers) see one phrase.
+- **Test filename**: spec suggested `SquareCheck_test.js`; repo convention is `*.test.js` (Systems.test.js, TapeCalc.test.js) and CRA's jest only picks up that pattern, so it's `SquareCheck.test.js`.
+- **Tab plumbing only in App.js**: new import + `<Tab>` + `<TabPanel index={2}>` in the standard `tab-content-card`; Systems, TapeCalc, and the commented-out PostLevel block untouched. Nothing needed disabling, so no TEMPORARILY DISABLED markers were added.
+- **Suite status**: 84 passed / 1 failed — the failure is the pre-existing Systems spindle-branch test documented in Task F, unaffected by this change.

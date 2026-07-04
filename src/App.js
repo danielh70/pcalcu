@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 // import PostLevel from './components/PostLevel';
 import TapeCalc from './components/TapeCalc';
 import Systems from './components/Systems';
+import SquareCheck from './components/SquareCheck';
 
 import './App.css';
 
@@ -43,6 +44,7 @@ export default function App() {
           {/* <Tab label='Post Level' id='tab-0' aria-controls='tabpanel-0' /> */}
           <Tab label='Tape Calc' id='tab-0' aria-controls='tabpanel-0' />
           <Tab label='Systems' id='tab-1' aria-controls='tabpanel-1' />
+          <Tab label='Square Check' id='tab-2' aria-controls='tabpanel-2' />
         </Tabs>
         {/* <TabPanel value={value} index={0}>
           <div className='tab-content-card'>
@@ -63,6 +65,11 @@ export default function App() {
         <TabPanel value={value} index={1}>
           <div className='tab-content-card'>
             <Systems />
+          </div>
+        </TabPanel>
+        <TabPanel value={value} index={2}>
+          <div className='tab-content-card'>
+            <SquareCheck />
           </div>
         </TabPanel>
       </main>
